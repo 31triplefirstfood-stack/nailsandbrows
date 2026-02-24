@@ -1,26 +1,170 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ========================================
+   Nails & Brows POS — Rose / Pink Theme
+   ======================================== */
+:root {
+  --radius: 0.75rem;
+
+  /* Core - Soft rose whites */
+  --background: oklch(0.985 0.002 350);
+  --foreground: oklch(0.18 0.02 350);
+
+  /* Cards - Pure white with rose tint */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 350);
+
+  /* Popover */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 350);
+
+  /* Primary - Rose/Pink */
+  --primary: oklch(0.62 0.19 350);
+  --primary-foreground: oklch(0.99 0.005 350);
+
+  /* Secondary - Soft pink tint */
+  --secondary: oklch(0.96 0.015 350);
+  --secondary-foreground: oklch(0.35 0.04 350);
+
+  /* Muted */
+  --muted: oklch(0.96 0.01 350);
+  --muted-foreground: oklch(0.52 0.02 350);
+
+  /* Accent - Light rose */
+  --accent: oklch(0.95 0.025 350);
+  --accent-foreground: oklch(0.35 0.04 350);
+
+  /* Destructive */
+  --destructive: oklch(0.577 0.245 27.325);
+
+  /* Borders - Rose tinted */
+  --border: oklch(0.92 0.01 350);
+  --input: oklch(0.92 0.012 350);
+  --ring: oklch(0.62 0.19 350);
+
+  /* Charts - Salon-inspired palette */
+  --chart-1: oklch(0.65 0.2 350);
+  --chart-2: oklch(0.68 0.15 310);
+  --chart-3: oklch(0.72 0.12 30);
+  --chart-4: oklch(0.75 0.1 280);
+  --chart-5: oklch(0.6 0.13 180);
+
+  /* Sidebar */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.18 0.02 350);
+  --sidebar-primary: oklch(0.62 0.19 350);
+  --sidebar-primary-foreground: oklch(0.99 0.005 350);
+  --sidebar-accent: oklch(0.96 0.025 350);
+  --sidebar-accent-foreground: oklch(0.35 0.04 350);
+  --sidebar-border: oklch(0.94 0.012 350);
+  --sidebar-ring: oklch(0.62 0.19 350);
+}
+
+.dark {
+  --background: oklch(0.14 0.01 350);
+  --foreground: oklch(0.96 0.005 350);
+  --card: oklch(0.19 0.015 350);
+  --card-foreground: oklch(0.96 0.005 350);
+  --popover: oklch(0.19 0.015 350);
+  --popover-foreground: oklch(0.96 0.005 350);
+  --primary: oklch(0.72 0.17 350);
+  --primary-foreground: oklch(0.14 0.01 350);
+  --secondary: oklch(0.24 0.02 350);
+  --secondary-foreground: oklch(0.96 0.005 350);
+  --muted: oklch(0.24 0.015 350);
+  --muted-foreground: oklch(0.65 0.02 350);
+  --accent: oklch(0.24 0.025 350);
+  --accent-foreground: oklch(0.96 0.005 350);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.72 0.17 350);
+  --chart-1: oklch(0.65 0.2 350);
+  --chart-2: oklch(0.68 0.15 310);
+  --chart-3: oklch(0.72 0.12 30);
+  --chart-4: oklch(0.75 0.1 280);
+  --chart-5: oklch(0.6 0.13 180);
+  --sidebar: oklch(0.17 0.015 350);
+  --sidebar-foreground: oklch(0.96 0.005 350);
+  --sidebar-primary: oklch(0.72 0.17 350);
+  --sidebar-primary-foreground: oklch(0.96 0.005 350);
+  --sidebar-accent: oklch(0.24 0.025 350);
+  --sidebar-accent-foreground: oklch(0.96 0.005 350);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.72 0.17 350);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.85 0.015 350);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.75 0.03 350);
 }

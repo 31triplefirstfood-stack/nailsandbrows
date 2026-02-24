@@ -1,0 +1,94 @@
+# Step 1 Complete: Project Setup & Layout
+
+## What Was Built
+
+Fully functional Next.js project with a premium salon-themed layout shell featuring:
+
+- **Rose/pink CSS theme** via oklch color variables in [globals.css](file:///d:/Workshop/nailpos/src/app/globals.css)
+- **Collapsible sidebar** with 7 Thai menu items and Lucide icons
+- **Responsive header** with mobile drawer, notifications, and user profile
+- **Dashboard page** with 4 stat cards (revenue, appointments, customers, monthly)
+- **6 placeholder route pages** for all menu items
+- **15 Shadcn UI components** (button, input, table, dialog, card, calendar, select, badge, dropdown-menu, sheet, separator, skeleton, sonner, label, form)
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| [sidebar.tsx](file:///d:/Workshop/nailpos/src/components/layout/sidebar.tsx) | Collapsible desktop sidebar nav |
+| [header.tsx](file:///d:/Workshop/nailpos/src/components/layout/header.tsx) | Header + mobile drawer |
+| [layout.tsx](file:///d:/Workshop/nailpos/src/app/layout.tsx) | Root layout shell |
+| [page.tsx](file:///d:/Workshop/nailpos/src/app/page.tsx) | Dashboard page |
+| [globals.css](file:///d:/Workshop/nailpos/src/app/globals.css) | Rose/pink theme variables |
+
+## Browser Verification
+
+![Dashboard successfully rendering with sidebar, stat cards, and Thai text](C:\Users\ayumg\.gemini\antigravity\brain\20a0c339-4dbd-40bc-9cd0-13703c220992\.system_generated\click_feedback\click_feedback_1771933358378.png)
+
+![Navigation recording](C:\Users\ayumg\.gemini\antigravity\brain\20a0c339-4dbd-40bc-9cd0-13703c220992\dashboard_navigation_test_1771933313513.webp)
+
+✅ All sidebar links navigate correctly  
+✅ Rose/pink theme applied consistently  
+✅ Dashboard stat cards render with Thai labels  
+✅ Date displays in Thai locale (วันอังคารที่ 24 กุมภาพันธ์ 2569)  
+✅ Dev server running at `http://localhost:3000`
+
+---
+
+# Step 2 Complete: Database Schema & API Setup
+
+## What Was Built
+
+Implemented the full Prisma database layer with relationships, and created the backend API routes to manage the salon's data.
+
+- **Prisma Schema**: Defined robust models for [User](file:///d:/Workshop/nailpos/src/generated/prisma/client.ts#46-47), [ServiceItem](file:///d:/Workshop/nailpos/src/app/records/page.tsx#19-20), [Appointment](file:///d:/Workshop/nailpos/src/app/appointments/page.tsx#19-29), [Transaction](file:///d:/Workshop/nailpos/src/app/records/page.tsx#21-30), [TransactionItem](file:///d:/Workshop/nailpos/src/generated/prisma/client.ts#66-67), and [Expense](file:///d:/Workshop/nailpos/src/generated/prisma/client.ts#71-72).
+- **Enums**: Strongly typed categories for Services (Nails, Brows, Others), Appointment Status, and Payment Methods.
+- **REST APIs**: Full CRUD route handlers under `/api/` for services, appointments, transactions, and expenses. Include advanced relation loading (e.g., Transactions return nested line items).
+- **Dashboard API**: Created `/api/dashboard` returning aggregate data (Today's revenue, monthly totals, upcoming appointments).
+- **Seed API Endpoint**: Implemented an explicit `/api/seed` route to securely populate the database with realistic Thai dummy data, bypassing Node/Turbo ESM caching limitations.
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| [schema.prisma](file:///d:/Workshop/nailpos/prisma/schema.prisma) | Core database architecture |
+| [api/seed/route.ts](file:///d:/Workshop/nailpos/src/app/api/seed/route.ts) | Next.js API route to run the database seed |
+| [lib/prisma.ts](file:///d:/Workshop/nailpos/src/lib/prisma.ts) | Cached Prisma client singleton for Next.js |
+| [api/dashboard/route.ts](file:///d:/Workshop/nailpos/src/app/api/dashboard/route.ts) | Aggregated metrics endpoint for the frontend |
+
+> [!WARNING]
+> The Next.js development server caches modules heavily. Because we switched the Prisma client generation back to the standard `node_modules/@prisma/client` path, the dev server must be restarted to clear the cache before the API route can be used.
+
+---
+
+# Step 3 Complete: Core Feature Pages
+
+## What Was Built
+
+Full CRUD UI for all 4 core feature areas, plus a live dashboard:
+
+- **Dashboard** `/` — Live stats (today’s revenue, monthly totals, net profit), upcoming appointments, recent transactions, quick nav.
+- **Services** `/services` — Card grid with category filter/search, add/edit/delete modals.
+- **Appointments** `/appointments` — List with status badges (pending, confirmed, completed, cancelled), full CRUD.
+- **POS Records** `/records` — Service selector grid + cart panel + checkout modal (cash/transfer/PromptPay/card) + history tab.
+- **Expenses** `/expenses` — Monthly totals, searchable list, add/edit/delete.
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| [page.tsx](file:///d:/Workshop/nailpos/src/app/page.tsx) | Dashboard with live /api/dashboard data |
+| [services/page.tsx](file:///d:/Workshop/nailpos/src/app/services/page.tsx) | Service management grid |
+| [appointments/page.tsx](file:///d:/Workshop/nailpos/src/app/appointments/page.tsx) | Appointment list & booking form |
+| [records/page.tsx](file:///d:/Workshop/nailpos/src/app/records/page.tsx) | POS sales interface |
+| [expenses/page.tsx](file:///d:/Workshop/nailpos/src/app/expenses/page.tsx) | Expense tracking |
+
+## Browser Verification
+
+![Dashboard with live data — ฿3,650 today, 4 appointments, 3 transactions](C:\Users\ayumg\.gemini\antigravity\brain\20a0c339-4dbd-40bc-9cd0-13703c220992\dashboard_step3.png)
+
+✅ Dashboard shows live data from seeded database  
+✅ Services page: 12 services across 3 categories  
+✅ Appointments page: 4 appointments with status badges  
+✅ POS/Records: service grid + cart + checkout modal  
+✅ Expenses page: 4 records with category tags
