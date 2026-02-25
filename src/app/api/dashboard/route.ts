@@ -2,15 +2,28 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 // GET dashboard summary data
+export const dynamic = "force-dynamic"; // Force dynamic execution on Vercel
+
 export async function GET() {
     try {
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(todayStart);
-        todayEnd.setDate(todayEnd.getDate() + 1);
+        // Vercel server runs in UTC. We need to calculate start of today/month
+        // for "Asia/Bangkok" (UTC+7) in proper UTC timestamps for Prisma query.
+        const nowUtc = new Date();
+        const bkkString = nowUtc.toLocaleString("en-US", { timeZone: "Asia/Bangkok" });
+        const bkkDate = new Date(bkkString);
 
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const bkkYear = bkkDate.getFullYear();
+        const bkkMonth = bkkDate.getMonth();
+        const bkkDay = bkkDate.getDate();
+
+        // 00:00 BKK is 17:00 UTC of the previous day
+        const todayStart = new Date(Date.UTC(bkkYear, bkkMonth, bkkDay - 1, 17, 0, 0, 0));
+        const todayEnd = new Date(Date.UTC(bkkYear, bkkMonth, bkkDay, 17, 0, 0, 0));
+
+        // Start of this month in BKK (1st day 00:00) is 17:00 UTC of the previous month's last day
+        const monthStart = new Date(Date.UTC(bkkYear, bkkMonth, 0, 17, 0, 0, 0));
+        // Start of next month in BKK
+        const monthEnd = new Date(Date.UTC(bkkYear, bkkMonth + 1, 0, 17, 0, 0, 0));
 
         // Today's revenue
         const todayTransactions = await prisma.transaction.findMany({
