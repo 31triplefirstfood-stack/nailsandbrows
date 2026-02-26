@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -18,9 +17,11 @@ type PaymentMethod = "CASH" | "TRANSFER" | "PROMPTPAY" | "CREDIT_CARD";
 
 interface ServiceItem { id: string; name: string; category: string; price: number; durationMinutes: number; }
 interface CartItem { service: ServiceItem; quantity: number; }
+interface Employee { id: string; name: string; role: string; }
 interface Transaction {
     id: string;
     customerName: string;
+    employeeName: string;
     totalAmount: number;
     paymentMethod: PaymentMethod;
     description: string;
@@ -33,27 +34,30 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
 };
 
 const CATEGORIES: Record<string, { label: string }> = {
-    NAILS: { label: "เล็บ" }, BROWS: { label: "คิ้ว" }, OTHERS: { label: "อื่นๆ" }
+    NAILS: { label: "เล็บ" }, EYELASH: { label: "ขนตา" }, PERMANENT_MAKEUP: { label: "สักปาก/คิ้ว" }, COURSE_STUDY: { label: "คอร์สเรียน" }
 };
 
 export default function RecordsPage() {
     const [services, setServices] = useState<ServiceItem[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [customerName, setCustomerName] = useState("");
+    const [employeeName, setEmployeeName] = useState("");
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
     const [searchSvc, setSearchSvc] = useState("");
-    const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
+    const [filterCategory, setFilterCategory] = useState<string>("ALL");
     const [processing, setProcessing] = useState(false);
     const [tab, setTab] = useState<"pos" | "history">("pos");
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
         try {
-            const [svcRes, txRes] = await Promise.all([fetch("/api/services"), fetch("/api/transactions")]);
+            const [svcRes, txRes, empRes] = await Promise.all([fetch("/api/services"), fetch("/api/transactions"), fetch("/api/employees")]);
             setServices(await svcRes.json());
             setTransactions(await txRes.json());
+            setEmployees(await empRes.json());
         } catch { toast.error("โหลดข้อมูลไม่สำเร็จ"); }
         finally { setLoading(false); }
     }, []);
@@ -73,11 +77,13 @@ export default function RecordsPage() {
 
     const handleCheckout = async () => {
         if (!customerName.trim()) { toast.error("กรุณาระบุชื่อลูกค้า"); return; }
+        if (!employeeName) { toast.error("กรุณาเลือกพนักงาน"); return; }
         if (cart.length === 0) { toast.error("กรุณาเลือกบริการ"); return; }
         setProcessing(true);
         try {
             const body = {
                 customerName: customerName.trim(),
+                employeeName,
                 paymentMethod,
                 totalAmount: cartTotal,
                 description: cart.map((c) => c.service.name).join(", "),
@@ -87,22 +93,30 @@ export default function RecordsPage() {
             const res = await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
             if (!res.ok) throw new Error();
             toast.success(`ชำระเงินสำเร็จ ฿${cartTotal.toLocaleString()} — ${PAYMENT_LABELS[paymentMethod]}`);
-            setCart([]); setCustomerName(""); setPaymentMethod("CASH"); setCheckoutDialogOpen(false);
+            setCart([]); setCustomerName(""); setEmployeeName(""); setPaymentMethod("CASH");
             fetchAll();
         } catch { toast.error("บันทึกไม่สำเร็จ"); }
         finally { setProcessing(false); }
     };
 
-    const filteredSvcs = services.filter((s) => s.name.includes(searchSvc));
-    const todayTx = transactions.filter((t) => t.date?.slice(0, 10) === format(new Date(), "yyyy-MM-dd"));
-    const todayRevenue = todayTx.reduce((sum, t) => sum + t.totalAmount, 0);
+    const filteredSvcs = services.filter((s) => {
+        const matchSearch = s.name.toLowerCase().includes(searchSvc.toLowerCase());
+        const matchCat = filterCategory === "ALL" || s.category === filterCategory;
+        return matchSearch && matchCat;
+    });
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayTx = transactions.filter((t) => {
+        if (!t.date) return false;
+        return format(new Date(t.date), "yyyy-MM-dd") === todayStr;
+    });
+    const todayRevenue = todayTx.reduce((sum, t) => sum + Number(t.totalAmount), 0);
 
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">บันทึกการขาย</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">รายได้วันนี้: <span className="font-bold text-rose-600">฿{todayRevenue.toLocaleString()}</span></p>
+                    <p className="text-gray-500 mt-2 flex items-center gap-2">รายได้วันนี้: <span className="text-3xl font-bold text-rose-600">฿{todayRevenue.toLocaleString()}</span></p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant={tab === "pos" ? "default" : "outline"} onClick={() => setTab("pos")} className={tab === "pos" ? "bg-rose-500 hover:bg-rose-600 text-white" : ""}>
@@ -118,9 +132,23 @@ export default function RecordsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Service Selector */}
                     <div className="lg:col-span-2 space-y-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <Input placeholder="ค้นหาบริการ..." className="pl-9" value={searchSvc} onChange={(e) => setSearchSvc(e.target.value)} />
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Input placeholder="ค้นหาบริการ..." className="pl-9" value={searchSvc} onChange={(e) => setSearchSvc(e.target.value)} />
+                            </div>
+                            <Select value={filterCategory} onValueChange={setFilterCategory}>
+                                <SelectTrigger className="w-full sm:w-[180px] bg-white">
+                                    <SelectValue placeholder="หมวดหมู่" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">หมวดหมู่ทั้งหมด</SelectItem>
+                                    <SelectItem value="NAILS">💅 เล็บ</SelectItem>
+                                    <SelectItem value="EYELASH">👁️ ขนตา</SelectItem>
+                                    <SelectItem value="PERMANENT_MAKEUP">💄 สักปาก/คิ้ว</SelectItem>
+                                    <SelectItem value="COURSE_STUDY">📚 คอร์สเรียน</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         {loading ? (
                             <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-rose-400" /></div>
@@ -134,7 +162,7 @@ export default function RecordsPage() {
                                             <div className="text-xs text-gray-400 mb-1">{CATEGORIES[svc.category]?.label}</div>
                                             <div className="font-semibold text-gray-900 text-sm leading-snug">{svc.name}</div>
                                             <div className="flex items-center justify-between mt-2">
-                                                <span className="text-base font-bold text-rose-600">฿{svc.price.toLocaleString()}</span>
+                                                <span className="text-xl font-bold text-rose-600">฿{svc.price.toLocaleString()}</span>
                                                 {inCart && <Badge className="bg-rose-500 text-white text-xs px-1.5">{inCart.quantity}</Badge>}
                                             </div>
                                         </button>
@@ -169,12 +197,42 @@ export default function RecordsPage() {
                                             </div>
                                         ))}
                                         <Separator />
-                                        <div className="flex justify-between font-bold text-lg">
-                                            <span>รวม</span>
-                                            <span className="text-rose-600">฿{cartTotal.toLocaleString()}</span>
+
+                                        <div className="space-y-4 pt-2">
+                                            <div className="space-y-1.5">
+                                                <Label>ชื่อลูกค้า</Label>
+                                                <Input placeholder="คุณแนน" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label>ชื่อพนักงาน</Label>
+                                                <Select value={employeeName} onValueChange={setEmployeeName}>
+                                                    <SelectTrigger className="bg-white"><SelectValue placeholder="เลือกพนักงาน" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {employees.map((emp) => (
+                                                            <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label>ช่องทางชำระเงิน</Label>
+                                                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                                                    <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((k) => (
+                                                            <SelectItem key={k} value={k}>{PAYMENT_LABELS[k]}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
-                                        <Button onClick={() => setCheckoutDialogOpen(true)} className="w-full bg-rose-500 hover:bg-rose-600 text-white gap-2">
-                                            <CheckCircle className="h-4 w-4" /> ชำระเงิน
+
+                                        <div className="flex justify-between items-center font-bold pt-2">
+                                            <span className="text-lg">รวม</span>
+                                            <span className="text-3xl text-rose-600">฿{cartTotal.toLocaleString()}</span>
+                                        </div>
+                                        <Button onClick={handleCheckout} disabled={processing} className="w-full bg-rose-500 hover:bg-rose-600 text-white gap-2">
+                                            <CheckCircle className="h-4 w-4" /> {processing ? "กำลังบันทึก..." : "ยืนยันชำระเงิน"}
                                         </Button>
                                     </>
                                 )}
@@ -213,40 +271,6 @@ export default function RecordsPage() {
                     )}
                 </div>
             )}
-
-            {/* Checkout Dialog */}
-            <Dialog open={checkoutDialogOpen} onOpenChange={setCheckoutDialogOpen}>
-                <DialogContent className="sm:max-w-sm">
-                    <DialogHeader><DialogTitle>ยืนยันการชำระเงิน</DialogTitle></DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-1.5">
-                            <Label>ชื่อลูกค้า</Label>
-                            <Input placeholder="คุณแนน" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label>ช่องทางชำระเงิน</Label>
-                            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((k) => (
-                                        <SelectItem key={k} value={k}>{PAYMENT_LABELS[k]}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="bg-rose-50 rounded-xl p-4 text-center">
-                            <p className="text-sm text-gray-500">ยอดรวม</p>
-                            <p className="text-3xl font-bold text-rose-600 mt-1">฿{cartTotal.toLocaleString()}</p>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setCheckoutDialogOpen(false)} disabled={processing}>ยกเลิก</Button>
-                        <Button onClick={handleCheckout} disabled={processing} className="bg-rose-500 hover:bg-rose-600 text-white">
-                            {processing ? "กำลังบันทึก..." : "ยืนยันชำระเงิน"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

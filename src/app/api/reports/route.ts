@@ -43,7 +43,7 @@ export async function GET() {
         }
 
         // Category breakdown (from transaction items)
-        const categoryTotals: Record<string, number> = { NAILS: 0, BROWS: 0, OTHERS: 0 };
+        const categoryTotals: Record<string, number> = { NAILS: 0, EYELASH: 0, PERMANENT_MAKEUP: 0, COURSE_STUDY: 0 };
         for (const tx of allTransactions) {
             for (const item of tx.items) {
                 const cat = item.service?.category ?? "OTHERS";
@@ -53,8 +53,9 @@ export async function GET() {
 
         const categoryData = [
             { name: "เล็บ", value: categoryTotals.NAILS, key: "NAILS" },
-            { name: "คิ้ว", value: categoryTotals.BROWS, key: "BROWS" },
-            { name: "อื่นๆ", value: categoryTotals.OTHERS, key: "OTHERS" },
+            { name: "ขนตา", value: categoryTotals.EYELASH, key: "EYELASH" },
+            { name: "สักปาก/คิ้ว", value: categoryTotals.PERMANENT_MAKEUP, key: "PERMANENT_MAKEUP" },
+            { name: "คอร์สเรียน", value: categoryTotals.COURSE_STUDY, key: "COURSE_STUDY" },
         ].filter((c) => c.value > 0);
 
         // Current month summary
@@ -72,7 +73,7 @@ export async function GET() {
             for (const item of tx.items) {
                 const id = item.service?.id ?? "unknown";
                 if (!serviceRevenue[id]) {
-                    serviceRevenue[id] = { name: item.service?.name ?? "?", category: item.service?.category ?? "OTHERS", revenue: 0, count: 0 };
+                    serviceRevenue[id] = { name: item.service?.name ?? "?", category: item.service?.category ?? "NAILS", revenue: 0, count: 0 };
                 }
                 serviceRevenue[id].revenue += Number(item.price) * item.quantity;
                 serviceRevenue[id].count += item.quantity;

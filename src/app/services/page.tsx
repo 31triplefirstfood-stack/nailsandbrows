@@ -23,7 +23,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-type ServiceCategory = "NAILS" | "BROWS" | "OTHERS";
+type ServiceCategory = "NAILS" | "EYELASH" | "PERMANENT_MAKEUP" | "COURSE_STUDY";
 
 interface ServiceItem {
     id: string;
@@ -36,8 +36,9 @@ interface ServiceItem {
 
 const CATEGORIES: Record<ServiceCategory, { label: string; color: string }> = {
     NAILS: { label: "เล็บ", color: "bg-pink-100 text-pink-700 border-pink-200" },
-    BROWS: { label: "คิ้ว", color: "bg-purple-100 text-purple-700 border-purple-200" },
-    OTHERS: { label: "อื่นๆ", color: "bg-blue-100 text-blue-700 border-blue-200" },
+    EYELASH: { label: "ขนตา", color: "bg-purple-100 text-purple-700 border-purple-200" },
+    PERMANENT_MAKEUP: { label: "สักปาก/คิ้ว", color: "bg-amber-100 text-amber-700 border-amber-200" },
+    COURSE_STUDY: { label: "คอร์สเรียน", color: "bg-blue-100 text-blue-700 border-blue-200" },
 };
 
 const emptyForm = { name: "", category: "NAILS" as ServiceCategory, price: "", durationMinutes: "" };
@@ -134,8 +135,9 @@ export default function ServicesPage() {
     const stats = {
         total: services.length,
         nails: services.filter((s) => s.category === "NAILS").length,
-        brows: services.filter((s) => s.category === "BROWS").length,
-        others: services.filter((s) => s.category === "OTHERS").length,
+        eyelash: services.filter((s) => s.category === "EYELASH").length,
+        permanentMakeup: services.filter((s) => s.category === "PERMANENT_MAKEUP").length,
+        courseStudy: services.filter((s) => s.category === "COURSE_STUDY").length,
     };
 
     return (
@@ -157,15 +159,16 @@ export default function ServicesPage() {
                 {[
                     { label: "ทั้งหมด", value: stats.total, icon: "🗂️" },
                     { label: "เล็บ", value: stats.nails, icon: "💅" },
-                    { label: "คิ้ว", value: stats.brows, icon: "✨" },
-                    { label: "อื่นๆ", value: stats.others, icon: "💆" },
+                    { label: "ขนตา", value: stats.eyelash, icon: "👁️" },
+                    { label: "สักปาก/คิ้ว", value: stats.permanentMakeup, icon: "💄" },
+                    { label: "คอร์สเรียน", value: stats.courseStudy, icon: "📚" },
                 ].map((s) => (
                     <Card key={s.label} className="border-0 shadow-sm bg-white">
                         <CardContent className="p-4 flex items-center gap-3">
-                            <span className="text-2xl">{s.icon}</span>
+                            <span className="text-3xl">{s.icon}</span>
                             <div>
-                                <p className="text-xs text-gray-500">{s.label}</p>
-                                <p className="text-xl font-bold text-gray-900">{s.value}</p>
+                                <p className="text-sm text-gray-500">{s.label}</p>
+                                <p className="text-3xl font-bold text-gray-900">{s.value}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -190,8 +193,9 @@ export default function ServicesPage() {
                     <SelectContent>
                         <SelectItem value="ALL">หมวดหมู่ทั้งหมด</SelectItem>
                         <SelectItem value="NAILS">💅 เล็บ</SelectItem>
-                        <SelectItem value="BROWS">✨ คิ้ว</SelectItem>
-                        <SelectItem value="OTHERS">💆 อื่นๆ</SelectItem>
+                        <SelectItem value="EYELASH">👁️ ขนตา</SelectItem>
+                        <SelectItem value="PERMANENT_MAKEUP">💄 สักปาก/คิ้ว</SelectItem>
+                        <SelectItem value="COURSE_STUDY">📚 คอร์สเรียน</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -258,8 +262,9 @@ export default function ServicesPage() {
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="NAILS">💅 เล็บ</SelectItem>
-                                    <SelectItem value="BROWS">✨ คิ้ว</SelectItem>
-                                    <SelectItem value="OTHERS">💆 อื่นๆ</SelectItem>
+                                    <SelectItem value="EYELASH">👁️ ขนตา</SelectItem>
+                                    <SelectItem value="PERMANENT_MAKEUP">💄 สักปาก/คิ้ว</SelectItem>
+                                    <SelectItem value="COURSE_STUDY">📚 คอร์สเรียน</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

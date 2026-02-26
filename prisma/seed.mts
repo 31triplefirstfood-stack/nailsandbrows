@@ -28,18 +28,57 @@ async function main() {
 
     // Service Items
     const services = await Promise.all([
-        prisma.serviceItem.create({ data: { name: "ทาเล็บเจล", category: "NAILS", price: 350, durationMinutes: 45 } }),
-        prisma.serviceItem.create({ data: { name: "ต่อเล็บเจล", category: "NAILS", price: 800, durationMinutes: 90 } }),
-        prisma.serviceItem.create({ data: { name: "ถอดเล็บเจล", category: "NAILS", price: 200, durationMinutes: 30 } }),
-        prisma.serviceItem.create({ data: { name: "เพ้นท์ลายเล็บ", category: "NAILS", price: 150, durationMinutes: 30 } }),
-        prisma.serviceItem.create({ data: { name: "ทำเล็บมือ + เท้า", category: "NAILS", price: 600, durationMinutes: 75 } }),
-        prisma.serviceItem.create({ data: { name: "ฝังสีคิ้ว", category: "BROWS", price: 2500, durationMinutes: 120 } }),
-        prisma.serviceItem.create({ data: { name: "แก้คิ้ว", category: "BROWS", price: 1500, durationMinutes: 90 } }),
-        prisma.serviceItem.create({ data: { name: "Microblading คิ้ว", category: "BROWS", price: 3000, durationMinutes: 120 } }),
-        prisma.serviceItem.create({ data: { name: "ย้อมคิ้ว", category: "BROWS", price: 300, durationMinutes: 20 } }),
-        prisma.serviceItem.create({ data: { name: "ลิฟท์ขนตา", category: "OTHERS", price: 500, durationMinutes: 45 } }),
-        prisma.serviceItem.create({ data: { name: "ต่อขนตา", category: "OTHERS", price: 800, durationMinutes: 60 } }),
-        prisma.serviceItem.create({ data: { name: "แว็กซ์หน้า", category: "OTHERS", price: 250, durationMinutes: 15 } }),
+        // Nails
+        prisma.serviceItem.create({ data: { name: "Spa Medi", category: "NAILS", price: 300, durationMinutes: 45 } }),
+        prisma.serviceItem.create({ data: { name: "Spa Pedi", category: "NAILS", price: 400, durationMinutes: 45 } }),
+        prisma.serviceItem.create({ data: { name: "Spa Medi+Pedi", category: "NAILS", price: 700, durationMinutes: 90 } }),
+        prisma.serviceItem.create({ data: { name: "+ Plain Nails Polish", category: "NAILS", price: 200, durationMinutes: 30 } }),
+        prisma.serviceItem.create({ data: { name: "+ Gel Nails Polish", category: "NAILS", price: 200, durationMinutes: 45 } }),
+        prisma.serviceItem.create({ data: { name: "Gel, regular Nails Polish", category: "NAILS", price: 300, durationMinutes: 60 } }),
+        prisma.serviceItem.create({ data: { name: "Gel Nails + Painting", category: "NAILS", price: 400, durationMinutes: 60 } }),
+        prisma.serviceItem.create({ data: { name: "Cut nails", category: "NAILS", price: 200, durationMinutes: 30 } }),
+        prisma.serviceItem.create({ data: { name: "Remove Gel (50)", category: "NAILS", price: 50, durationMinutes: 15 } }),
+        prisma.serviceItem.create({ data: { name: "Remove Gel (100)", category: "NAILS", price: 100, durationMinutes: 30 } }),
+        prisma.serviceItem.create({ data: { name: "Gel Extension 700", category: "NAILS", price: 700, durationMinutes: 90 } }),
+        prisma.serviceItem.create({ data: { name: "Gel Extension 800", category: "NAILS", price: 800, durationMinutes: 120 } }),
+        prisma.serviceItem.create({ data: { name: "Gel Extension 900", category: "NAILS", price: 900, durationMinutes: 120 } }),
+        prisma.serviceItem.create({ data: { name: "Extensions+Design 1000", category: "NAILS", price: 1000, durationMinutes: 150 } }),
+        prisma.serviceItem.create({ data: { name: "Extensions+Design 1100", category: "NAILS", price: 1100, durationMinutes: 150 } }),
+        prisma.serviceItem.create({ data: { name: "Refill", category: "NAILS", price: 600, durationMinutes: 90 } }),
+        prisma.serviceItem.create({ data: { name: "Paint", category: "NAILS", price: 100, durationMinutes: 30 } }),
+        prisma.serviceItem.create({ data: { name: "Gel nails polish", category: "NAILS", price: 500, durationMinutes: 60 } }),
+        prisma.serviceItem.create({ data: { name: "Cut nails trim cuticle", category: "NAILS", price: 200, durationMinutes: 45 } }),
+        prisma.serviceItem.create({ data: { name: "Remove Lash", category: "NAILS", price: 200, durationMinutes: 30 } }),
+
+        // Eyelash
+        prisma.serviceItem.create({ data: { name: "Waxing", category: "EYELASH", price: 200, durationMinutes: 30 } }),
+        prisma.serviceItem.create({ data: { name: "Tinting", category: "EYELASH", price: 250, durationMinutes: 30 } }),
+        prisma.serviceItem.create({ data: { name: "Waxing + Tinting", category: "EYELASH", price: 450, durationMinutes: 60 } }),
+        prisma.serviceItem.create({ data: { name: "Tinting + Brows + Lash + Waxing", category: "EYELASH", price: 700, durationMinutes: 90 } }),
+        prisma.serviceItem.create({ data: { name: "Lifting Brows or Lash", category: "EYELASH", price: 800, durationMinutes: 60 } }),
+        prisma.serviceItem.create({ data: { name: "++ Other++ 100", category: "EYELASH", price: 100, durationMinutes: 30 } }),
+        prisma.serviceItem.create({ data: { name: "++ Other++ 150", category: "EYELASH", price: 150, durationMinutes: 30 } }),
+        prisma.serviceItem.create({ data: { name: "Refill Lash 700", category: "EYELASH", price: 700, durationMinutes: 60 } }),
+        prisma.serviceItem.create({ data: { name: "Refill Lash 800", category: "EYELASH", price: 800, durationMinutes: 60 } }),
+        prisma.serviceItem.create({ data: { name: "Eyelash extension 1000", category: "EYELASH", price: 1000, durationMinutes: 90 } }),
+        prisma.serviceItem.create({ data: { name: "Eyelash extension 1100", category: "EYELASH", price: 1100, durationMinutes: 90 } }),
+        prisma.serviceItem.create({ data: { name: "Eyelash extension 1200", category: "EYELASH", price: 1200, durationMinutes: 120 } }),
+        prisma.serviceItem.create({ data: { name: "Eyelash extension 1300", category: "EYELASH", price: 1300, durationMinutes: 120 } }),
+        prisma.serviceItem.create({ data: { name: "Eyelash extension 1400", category: "EYELASH", price: 1400, durationMinutes: 150 } }),
+        prisma.serviceItem.create({ data: { name: "Eyelash extension 1500", category: "EYELASH", price: 1500, durationMinutes: 150 } }),
+        prisma.serviceItem.create({ data: { name: "Remove Eyelash 300", category: "EYELASH", price: 300, durationMinutes: 45 } }),
+        prisma.serviceItem.create({ data: { name: "Remove Eyelash 100", category: "EYELASH", price: 100, durationMinutes: 30 } }),
+
+        // Permanent Makeup
+        prisma.serviceItem.create({ data: { name: "Permanent Makeup without deposit", category: "PERMANENT_MAKEUP", price: 4000, durationMinutes: 180 } }),
+        prisma.serviceItem.create({ data: { name: "Permanent Makeup", category: "PERMANENT_MAKEUP", price: 3000, durationMinutes: 180 } }),
+        prisma.serviceItem.create({ data: { name: "Retouch Permanent makup", category: "PERMANENT_MAKEUP", price: 1500, durationMinutes: 120 } }),
+        prisma.serviceItem.create({ data: { name: "Lip Permanent", category: "PERMANENT_MAKEUP", price: 4000, durationMinutes: 180 } }),
+        prisma.serviceItem.create({ data: { name: "Deposit", category: "PERMANENT_MAKEUP", price: 1000, durationMinutes: 30 } }),
+
+        // Course Study
+        prisma.serviceItem.create({ data: { name: "Full Semi Permanent Makeup", category: "COURSE_STUDY", price: 20000, durationMinutes: 1440 } }),
+        prisma.serviceItem.create({ data: { name: "Class Nails", category: "COURSE_STUDY", price: 6000, durationMinutes: 1440 } }),
     ]);
     console.log(`✅ สร้างรายการบริการ ${services.length} รายการ`);
 

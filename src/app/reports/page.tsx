@@ -23,8 +23,8 @@ interface ReportsData {
     currentMonthName: string;
 }
 
-const COLORS = ["#f43f5e", "#a855f7", "#3b82f6", "#10b981", "#f59e0b"];
-const CAT_COLORS: Record<string, string> = { NAILS: "#f43f5e", BROWS: "#a855f7", OTHERS: "#3b82f6" };
+const COLORS = ["#f43f5e", "#a855f7", "#fbbf24", "#3b82f6", "#10b981"];
+const CAT_COLORS: Record<string, string> = { NAILS: "#f43f5e", EYELASH: "#a855f7", PERMANENT_MAKEUP: "#fbbf24", COURSE_STUDY: "#3b82f6" };
 
 // Custom Tooltip for Bar Chart
 const BarTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
@@ -169,8 +169,8 @@ export default function ReportsPage() {
                                     <Icon className={`h-5 w-5 ${card.iconColor}`} />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 leading-snug">{card.label}</p>
-                                    <p className={`text-lg font-bold ${card.valueColor}`}>{card.value}</p>
+                                    <p className="text-sm text-gray-500 leading-snug">{card.label}</p>
+                                    <p className={`text-3xl font-bold ${card.valueColor}`}>{card.value}</p>
                                 </div>
                             </CardContent>
                         </Card>

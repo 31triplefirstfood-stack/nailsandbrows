@@ -3,7 +3,7 @@ import { z } from "zod";
 // ─── Service ────────────────────────────────────────────────────────────────
 export const ServiceSchema = z.object({
     name: z.string().min(1, "กรุณากรอกชื่อบริการ").max(100),
-    category: z.enum(["NAILS", "BROWS", "OTHERS"], { message: "หมวดหมู่ไม่ถูกต้อง" }),
+    category: z.enum(["NAILS", "EYELASH", "PERMANENT_MAKEUP", "COURSE_STUDY"], { message: "หมวดหมู่ไม่ถูกต้อง" }),
     price: z.number({ message: "ราคาต้องเป็นตัวเลข" }).positive("ราคาต้องมากกว่า 0"),
     durationMinutes: z.number({ message: "ระยะเวลาต้องเป็นตัวเลข" }).int().positive("ระยะเวลาต้องมากกว่า 0").default(60),
 });
@@ -29,6 +29,7 @@ export const TransactionItemSchema = z.object({
 });
 export const TransactionSchema = z.object({
     customerName: z.string().min(1, "กรุณากรอกชื่อลูกค้า").max(100),
+    employeeName: z.string().min(1, "กรุณาเลือกพนักงาน").max(100),
     paymentMethod: z.enum(["CASH", "TRANSFER", "PROMPTPAY", "CREDIT_CARD"], {
         message: "วิธีชำระเงินไม่ถูกต้อง",
     }),

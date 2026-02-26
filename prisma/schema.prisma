@@ -21,8 +21,9 @@ enum Role {
 
 enum ServiceCategory {
   NAILS
-  BROWS
-  OTHERS
+  EYELASH
+  PERMANENT_MAKEUP
+  COURSE_STUDY
 }
 
 enum AppointmentStatus {
@@ -90,6 +91,7 @@ model Appointment {
 model Transaction {
   id            String        @id @default(cuid())
   customerName  String        @default("")
+  employeeName  String        @default("")
   totalAmount   Decimal       @db.Decimal(10, 2)
   paymentMethod PaymentMethod @default(CASH)
   description   String        @default("")
@@ -125,4 +127,16 @@ model Expense {
   updatedAt   DateTime @updatedAt
 
   @@map("expenses")
+}
+
+model SystemSettings {
+  id            String   @id @default(cuid())
+  storeName     String   @default("Nails & Brows")
+  storeLogo     String?  @db.Text
+  dailyTarget   Decimal  @db.Decimal(10, 2) @default(1000)
+  monthlyTarget Decimal  @db.Decimal(10, 2) @default(30000)
+  pagePin       String   @default("1234")
+  updatedAt     DateTime @updatedAt
+
+  @@map("system_settings")
 }

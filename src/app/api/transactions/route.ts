@@ -52,11 +52,12 @@ export async function POST(request: NextRequest) {
             const message = parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง";
             return NextResponse.json({ error: message }, { status: 400 });
         }
-        const { customerName, paymentMethod, description, items, totalAmount, date } = parsed.data;
+        const { customerName, employeeName, paymentMethod, description, items, totalAmount, date } = parsed.data;
 
         const transaction = await prisma.transaction.create({
             data: {
                 customerName,
+                employeeName,
                 totalAmount,
                 paymentMethod,
                 description: description ?? "",

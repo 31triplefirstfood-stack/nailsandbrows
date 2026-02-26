@@ -12,9 +12,12 @@ import {
     Settings,
     Sparkles,
     ChevronLeft,
+    Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useSettingsStore } from "@/store/settings";
+import Image from "next/image";
 
 const menuItems = [
     {
@@ -48,6 +51,11 @@ const menuItems = [
         icon: Wallet,
     },
     {
+        label: "พนักงาน",
+        href: "/employees",
+        icon: Users,
+    },
+    {
         label: "ตั้งค่า",
         href: "/settings",
         icon: Settings,
@@ -57,6 +65,7 @@ const menuItems = [
 export function Sidebar() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const { settings, isLoading } = useSettingsStore();
 
     return (
         <aside
@@ -70,13 +79,17 @@ export function Sidebar() {
                 "flex items-center gap-3 px-4 h-16 border-b border-rose-100",
                 collapsed && "justify-center px-2"
             )}>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 shadow-md shadow-rose-200">
-                    <Sparkles className="h-5 w-5 text-white" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 shadow-md shadow-rose-200 overflow-hidden relative">
+                    {!isLoading && settings?.storeLogo ? (
+                        <Image src={settings.storeLogo} alt="Store Logo" fill className="object-cover" />
+                    ) : (
+                        <Sparkles className="h-5 w-5 text-white" />
+                    )}
                 </div>
                 {!collapsed && (
                     <div className="flex flex-col">
-                        <span className="text-sm font-bold text-gray-800 tracking-tight">
-                            Nails & Brows
+                        <span className="text-sm font-bold text-gray-800 tracking-tight truncate max-w-[140px]">
+                            {isLoading ? "กำลังโหลด..." : (settings?.storeName || "Nails & Brows")}
                         </span>
                         <span className="text-[10px] text-rose-400 font-medium -mt-0.5">
                             POS System

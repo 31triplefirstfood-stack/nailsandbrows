@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useSettingsStore } from "@/store/settings";
+import Image from "next/image";
 
 const menuItems = [
     { label: "แดชบอร์ด", href: "/", icon: LayoutDashboard },
@@ -50,6 +52,7 @@ function getPageTitle(pathname: string): string {
 export function Header() {
     const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { settings, isLoading } = useSettingsStore();
 
     return (
         <>
@@ -100,12 +103,16 @@ export function Header() {
                         {/* Logo */}
                         <div className="flex items-center justify-between px-4 h-16 border-b border-rose-100">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 shadow-md shadow-rose-200">
-                                    <Sparkles className="h-5 w-5 text-white" />
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 shadow-md shadow-rose-200 relative overflow-hidden">
+                                    {!isLoading && settings?.storeLogo ? (
+                                        <Image src={settings.storeLogo} alt="Store Logo" fill className="object-cover" />
+                                    ) : (
+                                        <Sparkles className="h-5 w-5 text-white" />
+                                    )}
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-gray-800 tracking-tight">
-                                        Nails & Brows
+                                    <span className="text-sm font-bold text-gray-800 tracking-tight truncate max-w-[150px]">
+                                        {isLoading ? "กำลังโหลด..." : (settings?.storeName || "Nails & Brows")}
                                     </span>
                                     <span className="text-[10px] text-rose-400 font-medium -mt-0.5">
                                         POS System

@@ -119,8 +119,8 @@ export default function AppointmentsPage() {
                 ].map((s) => (
                     <Card key={s.label} className="border-0 shadow-sm bg-white">
                         <CardContent className="p-4 flex items-center gap-3">
-                            <span className="text-2xl">{s.icon}</span>
-                            <div><p className="text-xs text-gray-500">{s.label}</p><p className="text-xl font-bold">{s.value}</p></div>
+                            <span className="text-3xl">{s.icon}</span>
+                            <div><p className="text-sm text-gray-500">{s.label}</p><p className="text-3xl font-bold">{s.value}</p></div>
                         </CardContent>
                     </Card>
                 ))}

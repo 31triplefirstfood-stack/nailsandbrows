@@ -80,6 +80,18 @@ export async function GET() {
             take: 5,
         });
 
+        // Today's employees
+        const todayEmployees = await prisma.user.findMany({
+            where: {
+                role: { in: ["STAFF", "ADMIN"] },
+            },
+            select: {
+                id: true,
+                name: true,
+                role: true,
+            },
+        });
+
         return NextResponse.json({
             todayRevenue,
             monthRevenue,
@@ -88,6 +100,7 @@ export async function GET() {
             todayCustomers,
             upcomingAppointments,
             recentTransactions,
+            todayEmployees,
         });
     } catch (error) {
         console.error("GET /api/dashboard error:", error);
