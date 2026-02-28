@@ -8,13 +8,10 @@ import {
     ClipboardList,
     PlusCircle,
     CalendarDays,
-    BarChart3,
     Wallet,
     Settings,
     Sparkles,
     X,
-    Bell,
-    User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -22,21 +19,19 @@ import { useSettingsStore } from "@/store/settings";
 import Image from "next/image";
 
 const menuItems = [
-    { label: "แดชบอร์ด", href: "/", icon: LayoutDashboard },
-    { label: "รายการ", href: "/items", icon: ClipboardList },
-    { label: "บันทึก", href: "/records", icon: PlusCircle },
+    { label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard },
+    { label: "ผลงานพนักงาน", href: "/items", icon: ClipboardList },
+    { label: "บันทึก", href: "/", icon: PlusCircle },
     { label: "นัดหมาย", href: "/appointments", icon: CalendarDays },
-    { label: "รายงาน", href: "/reports", icon: BarChart3 },
     { label: "รายจ่าย", href: "/expenses", icon: Wallet },
     { label: "ตั้งค่า", href: "/settings", icon: Settings },
 ];
 
 const pageTitles: Record<string, string> = {
-    "/": "แดชบอร์ด",
-    "/items": "รายการบริการ",
-    "/records": "บันทึกรายการ",
+    "/dashboard": "แดชบอร์ด",
+    "/items": "ผลงานพนักงาน",
+    "/": "บันทึกรายการ",
     "/appointments": "นัดหมาย",
-    "/reports": "รายงาน",
     "/expenses": "รายจ่าย",
     "/settings": "ตั้งค่า",
 };
@@ -72,22 +67,8 @@ export function Header() {
                     </h1>
                 </div>
 
-                {/* Right side actions */}
-                <div className="flex items-center gap-2">
-                    <button className="relative flex items-center justify-center h-9 w-9 rounded-lg text-gray-400 hover:bg-rose-50 hover:text-rose-500 transition-colors">
-                        <Bell className="h-[18px] w-[18px]" />
-                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
-                    </button>
-                    <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-pink-500 text-white text-xs font-semibold shadow-sm">
-                            <User className="h-4 w-4" />
-                        </div>
-                        <div className="hidden sm:flex flex-col">
-                            <span className="text-xs font-medium text-gray-700">Admin</span>
-                            <span className="text-[10px] text-gray-400">ผู้ดูแลระบบ</span>
-                        </div>
-                    </div>
-                </div>
+                {/* Empty placeholder to maintain mobile flex layout balance */}
+                <div className="w-9 lg:hidden"></div>
             </header>
 
             {/* Mobile sidebar overlay */}

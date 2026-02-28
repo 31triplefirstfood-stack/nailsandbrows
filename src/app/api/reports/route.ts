@@ -3,16 +3,30 @@ import { NextResponse } from "next/server";
 
 const MONTH_TH = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
-        const now = new Date();
-        const year = now.getFullYear();
-        const currentMonth = now.getMonth(); // 0-indexed
+        const { searchParams } = new URL(request.url);
+        const yearParam = searchParams.get("year");
 
-        const yearStart = new Date(year, 0, 1);
-        const yearEnd = new Date(year + 1, 0, 1);
-        const monthStart = new Date(year, currentMonth, 1);
-        const monthEnd = new Date(year, currentMonth + 1, 1);
+        const nowUtc = new Date();
+        const bkkString = nowUtc.toLocaleString("en-US", { timeZone: "Asia/Bangkok" });
+        const bkkDate = new Date(bkkString);
+
+        const currentBkkYear = bkkDate.getFullYear();
+        const currentBkkMonth = bkkDate.getMonth();
+
+        let targetYear = yearParam ? parseInt(yearParam, 10) : currentBkkYear;
+        if (targetYear > 2500) targetYear -= 543; // Convert BE back to AD for DB query
+
+        const currentMonth = targetYear === currentBkkYear ? currentBkkMonth : 11; // 0-indexed, default to Dec for past years
+
+        // Start of year in BKK is Dec 31st 17:00 UTC of prior year
+        const yearStart = new Date(Date.UTC(targetYear, 0, 0, 17, 0, 0, 0));
+        // End of year in BKK is Dec 31st 17:00 UTC of target year
+        const yearEnd = new Date(Date.UTC(targetYear + 1, 0, 0, 17, 0, 0, 0));
+
+        const monthStart = new Date(Date.UTC(targetYear, currentMonth, 0, 17, 0, 0, 0));
+        const monthEnd = new Date(Date.UTC(targetYear, currentMonth + 1, 0, 17, 0, 0, 0));
 
         // Fetch all transactions and expenses for the year
         const [allTransactions, allExpenses] = await Promise.all([
@@ -33,12 +47,19 @@ export async function GET() {
             expenses: 0,
         }));
 
+        // Helper to get BKK Month index (0-11) for a given UTC Date
+        const getBkkMonthIndex = (dateVal: Date) => {
+            // Convert DB UTC date into BKK local time string, then parse it back
+            const bkkString = dateVal.toLocaleString("en-US", { timeZone: "Asia/Bangkok" });
+            return new Date(bkkString).getMonth();
+        };
+
         for (const tx of allTransactions) {
-            const m = new Date(tx.date).getMonth();
+            const m = getBkkMonthIndex(new Date(tx.date));
             if (m >= 0 && m < 12) monthlyData[m].income += Number(tx.totalAmount);
         }
         for (const exp of allExpenses) {
-            const m = new Date(exp.date).getMonth();
+            const m = getBkkMonthIndex(new Date(exp.date));
             if (m >= 0 && m < 12) monthlyData[m].expenses += Number(exp.amount);
         }
 
@@ -90,7 +111,7 @@ export async function GET() {
             monthExpenses,
             monthNetProfit,
             topServices,
-            year,
+            year: targetYear + 543,
             currentMonthName: MONTH_TH[currentMonth],
         });
     } catch (error) {

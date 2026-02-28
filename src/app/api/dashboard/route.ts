@@ -4,26 +4,43 @@ import { NextResponse } from "next/server";
 // GET dashboard summary data
 export const dynamic = "force-dynamic"; // Force dynamic execution on Vercel
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const yearParam = searchParams.get("year");
+        const monthParam = searchParams.get("month");
+
         // Vercel server runs in UTC. We need to calculate start of today/month
         // for "Asia/Bangkok" (UTC+7) in proper UTC timestamps for Prisma query.
         const nowUtc = new Date();
         const bkkString = nowUtc.toLocaleString("en-US", { timeZone: "Asia/Bangkok" });
         const bkkDate = new Date(bkkString);
 
-        const bkkYear = bkkDate.getFullYear();
-        const bkkMonth = bkkDate.getMonth();
-        const bkkDay = bkkDate.getDate();
+        const currentBkkYear = bkkDate.getFullYear();
+        const currentBkkMonth = bkkDate.getMonth();
+        const currentBkkDay = bkkDate.getDate();
+
+        let targetYear = yearParam ? parseInt(yearParam, 10) : currentBkkYear;
+        if (targetYear > 2500) targetYear -= 543; // Convert BE back to AD for DB query
+
+        const targetMonth = monthParam ? parseInt(monthParam, 10) : currentBkkMonth;
+
+        // Is target month currently active? (for today calculations)
+        const isCurrentMonth = targetYear === currentBkkYear && targetMonth === currentBkkMonth;
 
         // 00:00 BKK is 17:00 UTC of the previous day
-        const todayStart = new Date(Date.UTC(bkkYear, bkkMonth, bkkDay - 1, 17, 0, 0, 0));
-        const todayEnd = new Date(Date.UTC(bkkYear, bkkMonth, bkkDay, 17, 0, 0, 0));
+        const todayStart = isCurrentMonth
+            ? new Date(Date.UTC(currentBkkYear, currentBkkMonth, currentBkkDay - 1, 17, 0, 0, 0))
+            : new Date(Date.UTC(targetYear, targetMonth, 0, 17, 0, 0, 0)); // End of target month for past months
 
-        // Start of this month in BKK (1st day 00:00) is 17:00 UTC of the previous month's last day
-        const monthStart = new Date(Date.UTC(bkkYear, bkkMonth, 0, 17, 0, 0, 0));
+        const todayEnd = isCurrentMonth
+            ? new Date(Date.UTC(currentBkkYear, currentBkkMonth, currentBkkDay, 17, 0, 0, 0))
+            : new Date(Date.UTC(targetYear, targetMonth + 1, 0, 17, 0, 0, 0));
+
+        // Start of target month in BKK (1st day 00:00) is 17:00 UTC of the previous month's last day
+        const monthStart = new Date(Date.UTC(targetYear, targetMonth, 0, 17, 0, 0, 0));
         // Start of next month in BKK
-        const monthEnd = new Date(Date.UTC(bkkYear, bkkMonth + 1, 0, 17, 0, 0, 0));
+        const monthEnd = new Date(Date.UTC(targetYear, targetMonth + 1, 0, 17, 0, 0, 0));
 
         // Today's revenue
         const todayTransactions = await prisma.transaction.findMany({
@@ -94,8 +111,8 @@ export async function GET() {
 
         return NextResponse.json({
             todayRevenue,
-            monthRevenue,
-            monthExpenseTotal,
+            monthlyRevenue: monthRevenue,
+            monthlyExpenses: monthExpenseTotal,
             todayAppointments,
             todayCustomers,
             upcomingAppointments,

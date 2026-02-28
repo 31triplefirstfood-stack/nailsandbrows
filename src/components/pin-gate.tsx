@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Lock, Delete, ShieldCheck } from "lucide-react";
+import { Lock, Delete, ShieldCheck, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface PinGateProps {
     children: React.ReactNode;
@@ -10,6 +11,7 @@ interface PinGateProps {
 }
 
 export function PinGate({ children }: PinGateProps) {
+    const router = useRouter();
     const [pin, setPin] = useState("");
     const [error, setError] = useState("");
     const [checking, setChecking] = useState(false);
@@ -64,6 +66,14 @@ export function PinGate({ children }: PinGateProps) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-rose-50 via-white to-pink-50">
+            {/* Back Button */}
+            <button
+                onClick={() => router.back()}
+                className="absolute top-6 left-6 p-2 rounded-full hover:bg-white text-gray-500 hover:text-gray-900 transition-colors shadow-sm bg-white/50"
+            >
+                <ArrowLeft className="h-6 w-6" />
+            </button>
+
             <div className="w-full max-w-sm mx-auto px-6">
                 {/* Icon & Title */}
                 <div className="text-center mb-8">

@@ -26,30 +26,7 @@ interface ReportsData {
 const COLORS = ["#f43f5e", "#a855f7", "#fbbf24", "#3b82f6", "#10b981"];
 const CAT_COLORS: Record<string, string> = { NAILS: "#f43f5e", EYELASH: "#a855f7", PERMANENT_MAKEUP: "#fbbf24", COURSE_STUDY: "#3b82f6" };
 
-// Custom Tooltip for Bar Chart
-const BarTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
-    if (!active || !payload?.length) return null;
-    return (
-        <div className="bg-white border border-gray-100 rounded-xl shadow-lg p-3 text-sm">
-            <p className="font-semibold text-gray-800 mb-2">{label}</p>
-            {payload.map((p) => (
-                <div key={p.name} className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full inline-block" style={{ background: p.color }} />
-                    <span className="text-gray-600">{p.name}:</span>
-                    <span className="font-bold text-gray-900">฿{p.value.toLocaleString()}</span>
-                </div>
-            ))}
-            {payload.length === 2 && (
-                <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between">
-                    <span className="text-gray-500 text-xs">กำไร</span>
-                    <span className={`font-bold text-xs ${(payload[0].value - payload[1].value) >= 0 ? "text-green-600" : "text-red-500"}`}>
-                        ฿{(payload[0].value - payload[1].value).toLocaleString()}
-                    </span>
-                </div>
-            )}
-        </div>
-    );
-};
+// Custom Tooltip removed as Bar Chart moved to Dashboard
 
 // Custom Active Shape for Donut
 const ActiveShape = (props: {
@@ -68,7 +45,7 @@ const ActiveShape = (props: {
     );
 };
 
-export default function ReportsPage() {
+export function ReportsTab() {
     const [data, setData] = useState<ReportsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -83,7 +60,7 @@ export default function ReportsPage() {
 
     if (loading) {
         return (
-            <div className="p-6 space-y-6">
+            <div className="space-y-6">
                 <div>
                     <Skeleton className="h-8 w-48 mb-2" />
                     <Skeleton className="h-4 w-64" />
@@ -113,16 +90,17 @@ export default function ReportsPage() {
         );
     }
 
-    if (!data) return <div className="p-6 text-gray-500">ไม่สามารถโหลดข้อมูลได้</div>;
+    if (!data) return <div className="text-gray-500">ไม่สามารถโหลดข้อมูลได้</div>;
 
     const netProfitPositive = data.monthNetProfit >= 0;
 
     return (
-        <div className="p-6 space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">รายงาน & วิเคราะห์</h1>
-                <p className="text-sm text-gray-500 mt-0.5">ภาพรวมรายได้และรายจ่ายปี {data.year}</p>
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">รายงาน & วิเคราะห์</h2>
+                    <p className="text-sm font-medium text-gray-500 mt-1">ภาพรวมรายได้และรายจ่ายปี {data.year}</p>
+                </div>
             </div>
 
             {/* Monthly Summary Stats */}
@@ -163,14 +141,14 @@ export default function ReportsPage() {
                 ].map((card) => {
                     const Icon = card.icon;
                     return (
-                        <Card key={card.label} className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow">
+                        <Card key={card.label} className="border border-gray-100 shadow-sm bg-white hover:shadow-md transition-shadow rounded-2xl">
                             <CardContent className="p-4 flex items-center gap-3">
                                 <div className={`h-10 w-10 rounded-xl ${card.iconBg} flex items-center justify-center flex-shrink-0`}>
                                     <Icon className={`h-5 w-5 ${card.iconColor}`} />
                                 </div>
                                 <div>
                                     <p className="text-sm text-gray-500 leading-snug">{card.label}</p>
-                                    <p className={`text-3xl font-bold ${card.valueColor}`}>{card.value}</p>
+                                    <p className={`text-2xl font-bold ${card.valueColor}`}>{card.value}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -178,43 +156,17 @@ export default function ReportsPage() {
                 })}
             </div>
 
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Bar Chart — Monthly Income vs Expenses */}
-                <Card className="lg:col-span-2 border-0 shadow-sm bg-white">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <BarChart2 className="h-4 w-4 text-rose-500" />
-                            รายรับ vs รายจ่ายรายเดือน ปี {data.year}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={data.monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }} barGap={4}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickFormatter={(v) => v === 0 ? "0" : `${(v / 1000).toFixed(0)}k`} width={36} />
-                                <Tooltip content={<BarTooltip />} cursor={{ fill: "#fdf2f8", radius: 6 }} />
-                                <Legend
-                                    formatter={(value) => <span className="text-xs text-gray-600">{value}</span>}
-                                    wrapperStyle={{ paddingTop: "12px" }}
-                                />
-                                <Bar dataKey="income" name="รายรับ" fill="#f43f5e" radius={[6, 6, 0, 0]} maxBarSize={32} />
-                                <Bar dataKey="expenses" name="รายจ่าย" fill="#fda4af" radius={[6, 6, 0, 0]} maxBarSize={32} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-
+            {/* Charts and Tables Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Donut Chart — Sales by Category */}
-                <Card className="border-0 shadow-sm bg-white">
-                    <CardHeader className="pb-2">
+                <Card className="border border-gray-100 shadow-sm bg-white rounded-3xl">
+                    <CardHeader className="pb-2 pt-6 px-6">
                         <CardTitle className="text-base flex items-center gap-2">
                             <PieIcon className="h-4 w-4 text-rose-500" />
                             ยอดขายแยกประเภท
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-6 pb-6 pt-2">
                         {data.categoryData.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-[260px] text-gray-400">
                                 <PieIcon className="h-10 w-10 mb-2 opacity-20" />
@@ -270,46 +222,6 @@ export default function ReportsPage() {
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Top Services Table */}
-            <Card className="border-0 shadow-sm bg-white">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-rose-500" />
-                        บริการยอดนิยม (Top 5)
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {data.topServices.length === 0 ? (
-                        <p className="text-center text-gray-400 text-sm py-6">ยังไม่มีข้อมูล</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {data.topServices.map((svc, i) => {
-                                const maxRev = data.topServices[0]?.revenue ?? 1;
-                                const pct = (svc.revenue / maxRev) * 100;
-                                return (
-                                    <div key={svc.name} className="flex items-center gap-4">
-                                        <span className="text-sm font-bold text-gray-400 w-5 text-right">{i + 1}</span>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-sm font-medium text-gray-900 truncate">{svc.name}</span>
-                                                <span className="text-sm font-bold text-rose-600 ml-2">฿{svc.revenue.toLocaleString()}</span>
-                                            </div>
-                                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full transition-all duration-500"
-                                                    style={{ width: `${pct}%`, background: COLORS[i] ?? "#f43f5e" }}
-                                                />
-                                            </div>
-                                            <p className="text-xs text-gray-400 mt-0.5">{svc.count} ครั้ง</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
         </div>
     );
 }

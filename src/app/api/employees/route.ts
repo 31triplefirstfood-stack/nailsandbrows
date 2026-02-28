@@ -6,19 +6,24 @@ export const dynamic = "force-dynamic";
 
 const employeeSchema = z.object({
     name: z.string().min(1, "กรุณากรอกชื่อพนักงาน"),
-    role: z.enum(["STAFF", "ADMIN"]),
+    startDate: z.string().optional(),
+    salary: z.coerce.number().optional(),
+    commissionRate: z.coerce.number().optional(),
 });
 
 export async function GET() {
     try {
         const employees = await prisma.user.findMany({
             where: {
-                role: { in: ["STAFF", "ADMIN"] },
+                role: "STAFF",
             },
             select: {
                 id: true,
                 name: true,
                 role: true,
+                startDate: true,
+                salary: true,
+                commissionRate: true,
                 createdAt: true,
             },
             orderBy: {
@@ -51,13 +56,19 @@ export async function POST(request: Request) {
                 name: validatedData.name,
                 email: autoEmail,
                 password: autoPassword,
-                role: validatedData.role,
+                role: "STAFF",
+                startDate: validatedData.startDate ? new Date(validatedData.startDate) : undefined,
+                salary: validatedData.salary,
+                commissionRate: validatedData.commissionRate,
             },
             select: {
                 id: true,
                 name: true,
                 email: true,
                 role: true,
+                startDate: true,
+                salary: true,
+                commissionRate: true,
                 createdAt: true,
             }
         });

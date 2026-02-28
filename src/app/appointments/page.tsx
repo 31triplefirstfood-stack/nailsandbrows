@@ -27,11 +27,10 @@ interface Appointment {
     notes?: string;
 }
 
-const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; icon: React.ReactNode }> = {
-    PENDING: { label: "รอยืนยัน", color: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Clock className="h-3 w-3" /> },
-    CONFIRMED: { label: "ยืนยันแล้ว", color: "bg-blue-100 text-blue-700 border-blue-200", icon: <CheckCircle className="h-3 w-3" /> },
-    COMPLETED: { label: "เสร็จสิ้น", color: "bg-green-100 text-green-700 border-green-200", icon: <CheckCircle className="h-3 w-3" /> },
-    CANCELLED: { label: "ยกเลิก", color: "bg-red-100 text-red-700 border-red-200", icon: <XCircle className="h-3 w-3" /> },
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Clock className="h-3 w-3" /> },
+    COMPLETED: { label: "Completed", color: "bg-green-100 text-green-700 border-green-200", icon: <CheckCircle className="h-3 w-3" /> },
+    CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-700 border-red-200", icon: <XCircle className="h-3 w-3" /> },
 };
 
 const emptyForm = { customerName: "", phone: "", serviceId: "", date: "", time: "10:00", status: "PENDING" as AppointmentStatus, notes: "" };
@@ -41,7 +40,6 @@ export default function AppointmentsPage() {
     const [services, setServices] = useState<ServiceItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("ALL");
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingAppt, setEditingAppt] = useState<Appointment | null>(null);
     const [form, setForm] = useState(emptyForm);
@@ -53,7 +51,7 @@ export default function AppointmentsPage() {
             const [apptRes, svcRes] = await Promise.all([fetch("/api/appointments"), fetch("/api/services")]);
             setAppointments(await apptRes.json());
             setServices(await svcRes.json());
-        } catch { toast.error("โหลดข้อมูลไม่สำเร็จ"); }
+        } catch { toast.error("Failed to load data"); }
         finally { setLoading(false); }
     }, []);
 
@@ -67,7 +65,7 @@ export default function AppointmentsPage() {
     };
 
     const handleSave = async () => {
-        if (!form.customerName || !form.serviceId || !form.date || !form.time) { toast.error("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+        if (!form.customerName || !form.serviceId || !form.date || !form.time) { toast.error("Please fill in all required fields"); return; }
         setSaving(true);
         try {
             const body = { ...form, date: new Date(form.date).toISOString() };
@@ -75,21 +73,21 @@ export default function AppointmentsPage() {
                 ? await fetch(`/api/appointments/${editingAppt.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
                 : await fetch("/api/appointments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
             if (!res.ok) throw new Error();
-            toast.success(editingAppt ? "แก้ไขนัดหมายสำเร็จ" : "เพิ่มนัดหมายสำเร็จ");
+            toast.success(editingAppt ? "Appointment updated" : "Appointment added");
             setDialogOpen(false); fetchAll();
-        } catch { toast.error("บันทึกไม่สำเร็จ"); }
+        } catch { toast.error("Failed to save appointment"); }
         finally { setSaving(false); }
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("ยืนยันการลบนัดหมายนี้?")) return;
+        if (!confirm("Are you sure you want to delete this appointment?")) return;
         await fetch(`/api/appointments/${id}`, { method: "DELETE" });
-        toast.success("ลบนัดหมายสำเร็จ"); fetchAll();
+        toast.success("Appointment deleted"); fetchAll();
     };
 
     const filtered = appointments.filter((a) => {
         const matchSearch = a.customerName.includes(search) || a.service.name.includes(search);
-        const matchStatus = statusFilter === "ALL" || a.status === statusFilter;
+        const matchStatus = a.status === "PENDING";
         return matchSearch && matchStatus;
     });
 
@@ -98,24 +96,24 @@ export default function AppointmentsPage() {
     const pendingAppts = appointments.filter((a) => a.status === "PENDING").length;
 
     return (
-        <div className="p-6 space-y-6 max-w-6xl mx-auto">
+        <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">นัดหมาย</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">จัดการตารางนัดหมายลูกค้า</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
+                    <p className="text-sm text-gray-500 mt-0.5">Manage customer appointments</p>
                 </div>
                 <Button onClick={openAdd} className="bg-rose-500 hover:bg-rose-600 text-white gap-2">
-                    <Plus className="h-4 w-4" /> เพิ่มนัดหมาย
+                    <Plus className="h-4 w-4" /> Add Appointment
                 </Button>
             </div>
 
             {/* Quick stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: "ทั้งหมด", value: appointments.length, icon: "📅" },
-                    { label: "วันนี้", value: todayAppts, icon: "🗓️" },
-                    { label: "รอยืนยัน", value: pendingAppts, icon: "⏳" },
-                    { label: "เสร็จสิ้น", value: appointments.filter(a => a.status === "COMPLETED").length, icon: "✅" },
+                    { label: "All", value: appointments.length, icon: "📅" },
+                    { label: "Today", value: todayAppts, icon: "🗓️" },
+                    { label: "Pending", value: pendingAppts, icon: "⏳" },
+                    { label: "Completed", value: appointments.filter(a => a.status === "COMPLETED").length, icon: "✅" },
                 ].map((s) => (
                     <Card key={s.label} className="border-0 shadow-sm bg-white">
                         <CardContent className="p-4 flex items-center gap-3">
@@ -130,18 +128,8 @@ export default function AppointmentsPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input placeholder="ค้นหาชื่อลูกค้า, บริการ..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    <Input placeholder="Search customer, service..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="ALL">สถานะทั้งหมด</SelectItem>
-                        <SelectItem value="PENDING">⏳ รอยืนยัน</SelectItem>
-                        <SelectItem value="CONFIRMED">✅ ยืนยันแล้ว</SelectItem>
-                        <SelectItem value="COMPLETED">🎉 เสร็จสิ้น</SelectItem>
-                        <SelectItem value="CANCELLED">❌ ยกเลิก</SelectItem>
-                    </SelectContent>
-                </Select>
             </div>
 
             {/* List */}
@@ -150,7 +138,7 @@ export default function AppointmentsPage() {
             ) : filtered.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                     <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-lg font-medium">ไม่พบนัดหมาย</p>
+                    <p className="text-lg font-medium">No appointments found</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -177,8 +165,8 @@ export default function AppointmentsPage() {
                                             </div>
                                         </div>
                                         <div className="flex gap-2 flex-shrink-0">
-                                            <Button size="sm" variant="outline" onClick={() => openEdit(appt)} className="h-8 px-3 text-xs">แก้ไข</Button>
-                                            <Button size="sm" variant="outline" onClick={() => handleDelete(appt.id)} className="h-8 px-3 text-xs text-red-500 hover:text-red-600 hover:bg-red-50">ลบ</Button>
+                                            <Button size="sm" variant="outline" onClick={() => openEdit(appt)} className="h-8 px-3 text-xs">Edit</Button>
+                                            <Button size="sm" variant="outline" onClick={() => handleDelete(appt.id)} className="h-8 px-3 text-xs text-red-500 hover:text-red-600 hover:bg-red-50">Delete</Button>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -191,56 +179,55 @@ export default function AppointmentsPage() {
             {/* Dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent className="sm:max-w-md">
-                    <DialogHeader><DialogTitle>{editingAppt ? "แก้ไขนัดหมาย" : "เพิ่มนัดหมายใหม่"}</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{editingAppt ? "Edit Appointment" : "Add New Appointment"}</DialogTitle></DialogHeader>
                     <div className="space-y-4 py-2">
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1.5 col-span-2">
-                                <Label>ชื่อลูกค้า</Label>
-                                <Input placeholder="คุณแนน" value={form.customerName} onChange={(e) => setForm(f => ({ ...f, customerName: e.target.value }))} />
+                                <Label>Customer Name</Label>
+                                <Input placeholder="e.g., Nan" value={form.customerName} onChange={(e) => setForm(f => ({ ...f, customerName: e.target.value }))} />
                             </div>
                             <div className="space-y-1.5">
-                                <Label>เบอร์โทร</Label>
+                                <Label>Phone Number</Label>
                                 <Input placeholder="08X-XXX-XXXX" value={form.phone} onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
                             </div>
                             <div className="space-y-1.5">
-                                <Label>สถานะ</Label>
+                                <Label>Status</Label>
                                 <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v as AppointmentStatus }))}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="PENDING">รอยืนยัน</SelectItem>
-                                        <SelectItem value="CONFIRMED">ยืนยันแล้ว</SelectItem>
-                                        <SelectItem value="COMPLETED">เสร็จสิ้น</SelectItem>
-                                        <SelectItem value="CANCELLED">ยกเลิก</SelectItem>
+                                        <SelectItem value="PENDING">Pending</SelectItem>
+                                        <SelectItem value="COMPLETED">Completed</SelectItem>
+                                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-1.5 col-span-2">
-                                <Label>บริการ</Label>
+                                <Label>Service</Label>
                                 <Select value={form.serviceId} onValueChange={(v) => setForm(f => ({ ...f, serviceId: v }))}>
-                                    <SelectTrigger><SelectValue placeholder="เลือกบริการ" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Select Service" /></SelectTrigger>
                                     <SelectContent>
                                         {services.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} — ฿{s.price}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-1.5">
-                                <Label>วันที่</Label>
+                                <Label>Date</Label>
                                 <Input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} />
                             </div>
                             <div className="space-y-1.5">
-                                <Label>เวลา</Label>
+                                <Label>Time</Label>
                                 <Input type="time" value={form.time} onChange={(e) => setForm(f => ({ ...f, time: e.target.value }))} />
                             </div>
                             <div className="space-y-1.5 col-span-2">
-                                <Label>หมายเหตุ</Label>
-                                <Input placeholder="หมายเหตุเพิ่มเติม..." value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} />
+                                <Label>Notes</Label>
+                                <Input placeholder="Additional notes..." value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} />
                             </div>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>ยกเลิก</Button>
+                        <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>Cancel</Button>
                         <Button onClick={handleSave} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white">
-                            {saving ? "กำลังบันทึก..." : "บันทึก"}
+                            {saving ? "Saving..." : "Save"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

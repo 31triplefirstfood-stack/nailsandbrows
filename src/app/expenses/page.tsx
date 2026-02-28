@@ -30,14 +30,36 @@ export default function ExpensesPage() {
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
+    const [monthIncome, setMonthIncome] = useState(0);
 
     const fetchExpenses = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch("/api/expenses");
-            setExpenses(await res.json());
-        } catch { toast.error("โหลดข้อมูลไม่สำเร็จ"); }
-        finally { setLoading(false); }
+            // 1. Trigger monthly expenses check/creation
+            const now = new Date();
+            const dateStr = now.toISOString();
+            await fetch(`/api/expenses/monthly?date=${dateStr}`).catch(err => console.error("Monthly trigger error:", err));
+
+            // 2. Fetch all expenses and dashboard data
+            const [res, dashRes] = await Promise.all([
+                fetch("/api/expenses"),
+                fetch("/api/dashboard")
+            ]);
+
+            if (res.ok) {
+                const data = await res.json();
+                setExpenses(data);
+            }
+            if (dashRes.ok) {
+                const dashData = await dashRes.json();
+                setMonthIncome(dashData.monthRevenue || 0);
+            }
+        } catch (error) {
+            console.error("Fetch expenses error:", error);
+            toast.error("โหลดข้อมูลไม่สำเร็จ");
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
@@ -72,15 +94,21 @@ export default function ExpensesPage() {
         toast.success("ลบรายจ่ายสำเร็จ"); fetchExpenses();
     };
 
-    const filtered = expenses.filter((e) => e.description.includes(search) || e.category.includes(search));
+    const currentMonth = format(new Date(), "yyyy-MM");
+    const filtered = expenses.filter((e) => {
+        const matchesSearch = e.description.includes(search) || e.category.includes(search);
+        const isCurrentMonth = e.date?.slice(0, 7) === currentMonth;
+        return matchesSearch && isCurrentMonth;
+    });
     const totalThisMonth = expenses
         .filter((e) => e.date?.slice(0, 7) === format(new Date(), "yyyy-MM"))
         .reduce((sum, e) => sum + Number(e.amount), 0);
     const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+    const netProfit = monthIncome - totalThisMonth;
 
     return (
         <PinGate storageKey="pin-expenses">
-            <div className="p-6 space-y-6 max-w-6xl mx-auto">
+            <div className="p-6 space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">รายจ่าย</h1>
@@ -94,13 +122,13 @@ export default function ExpensesPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[
                         { label: "รายจ่ายเดือนนี้", value: `฿${totalThisMonth.toLocaleString()}`, icon: "📅" },
-                        { label: "รายจ่ายทั้งหมด", value: `฿${total.toLocaleString()}`, icon: "💸" },
-                        { label: "รายการคงเหลือ", value: `${expenses.length} รายการ`, icon: "📋" },
+                        { label: "รายได้เดือนนี้", value: `฿${monthIncome.toLocaleString()}`, icon: "💰", color: "text-green-600" },
+                        { label: "กำไรสุทธิ", value: `฿${netProfit.toLocaleString()}`, icon: "📈", color: netProfit >= 0 ? "text-blue-600" : "text-rose-600" },
                     ].map((s) => (
                         <Card key={s.label} className="border-0 shadow-sm bg-white">
                             <CardContent className="p-4 flex items-center gap-3">
                                 <span className="text-3xl">{s.icon}</span>
-                                <div><p className="text-sm text-gray-500">{s.label}</p><p className="text-3xl font-bold text-gray-900">{s.value}</p></div>
+                                <div><p className="text-sm text-gray-500">{s.label}</p><p className={`text-2xl xl:text-3xl font-bold ${s.color || "text-gray-900"}`}>{s.value}</p></div>
                             </CardContent>
                         </Card>
                     ))}

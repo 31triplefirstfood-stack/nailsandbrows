@@ -10,7 +10,7 @@
     "postinstall": "prisma generate"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.mts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

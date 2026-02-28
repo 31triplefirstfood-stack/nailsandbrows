@@ -38,6 +38,8 @@ enum PaymentMethod {
   TRANSFER
   CREDIT_CARD
   PROMPTPAY
+  GOWABI
+  ALIPAY
 }
 
 // =====================
@@ -45,13 +47,16 @@ enum PaymentMethod {
 // =====================
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(STAFF)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  password       String
+  role           Role      @default(STAFF)
+  startDate      DateTime  @default(now())
+  salary         Decimal?  @db.Decimal(10, 2)
+  commissionRate Decimal?  @db.Decimal(5, 2)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@map("users")
 }

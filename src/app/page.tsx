@@ -1,314 +1,404 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { CalendarDays, TrendingUp, TrendingDown, Users, Clock, Sparkles, ArrowRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Trash2, Search, CheckCircle, Loader2, Receipt, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { useSettingsStore } from "@/store/settings";
-import { Progress } from "@/components/ui/progress";
-import { PinGate } from "@/components/pin-gate";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
-interface DashboardData {
-  todayRevenue: number;
-  monthlyRevenue: number;
-  monthlyExpenses: number;
-  upcomingAppointments: Array<{ id: string; customerName: string; service: { name: string }; time: string; date: string; status: string }>;
-  recentTransactions: Array<{ id: string; customerName: string; totalAmount: number; paymentMethod: string; date: string }>;
-  todayEmployees: Array<{ id: string; name: string; role: string }>;
-  totalServices: number;
+type PaymentMethod = "CASH" | "CREDIT_CARD" | "PROMPTPAY" | "GOWABI" | "ALIPAY";
+
+interface ServiceItem { id: string; name: string; category: string; price: number; durationMinutes: number; }
+interface CartItem { service: ServiceItem; quantity: number; }
+interface Employee { id: string; name: string; role: string; }
+interface Transaction {
+    id: string;
+    customerName: string;
+    employeeName: string;
+    totalAmount: number;
+    paymentMethod: PaymentMethod;
+    description: string;
+    date: string;
+    items: { service: ServiceItem; quantity: number; price: number }[];
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  CONFIRMED: "bg-blue-100 text-blue-700 border-blue-200",
-  COMPLETED: "bg-green-100 text-green-700 border-green-200",
-  CANCELLED: "bg-red-100 text-red-700 border-red-200",
-};
-const STATUS_TH: Record<string, string> = {
-  PENDING: "รอยืนยัน", CONFIRMED: "ยืนยันแล้ว", COMPLETED: "เสร็จสิ้น", CANCELLED: "ยกเลิก"
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+    CASH: "Cash", CREDIT_CARD: "Card", PROMPTPAY: "QR Code", GOWABI: "Gowabi", ALIPAY: "Alipay"
 };
 
-export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { settings, isLoading: settingsLoading } = useSettingsStore();
-  const todayTh = format(new Date(), "EEEE d MMMM yyyy", { locale: th });
+const CATEGORIES: Record<string, { label: string }> = {
+    ALL: { label: "All" },
+    NAILS: { label: "Nails" },
+    EYELASH: { label: "Eyelash" },
+    PERMANENT_MAKEUP: { label: "Permanent Makeup" },
+    COURSE_STUDY: { label: "Course Study" }
+};
 
-  useEffect(() => {
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+export default function RecordsPage() {
+    const [services, setServices] = useState<ServiceItem[]>([]);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [cart, setCart] = useState<CartItem[]>([]);
+    const [customerName, setCustomerName] = useState("");
+    const [transactionDate, setTransactionDate] = useState(format(new Date(), "yyyy-MM-dd"));
+    const [employeeName, setEmployeeName] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
+    const [filterCategory, setFilterCategory] = useState<string>("ALL");
+    const [processing, setProcessing] = useState(false);
 
-  const netProfit = (data?.monthlyRevenue ?? 0) - (data?.monthlyExpenses ?? 0);
+    const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
+    const [newServiceName, setNewServiceName] = useState("");
+    const [newServicePrice, setNewServicePrice] = useState("");
+    const [newServiceCategory, setNewServiceCategory] = useState("NAILS");
+    const [isSubmittingService, setIsSubmittingService] = useState(false);
 
-  if (loading) {
+    const handleAddService = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newServiceName || !newServicePrice) {
+            toast.error("Please enter service name and price");
+            return;
+        }
+
+        setIsSubmittingService(true);
+        try {
+            const body = {
+                name: newServiceName,
+                category: newServiceCategory,
+                price: Number(newServicePrice),
+                durationMinutes: 60,
+            };
+            const res = await fetch("/api/services", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error();
+            toast.success("Service added successfully");
+            setNewServiceName("");
+            setNewServicePrice("");
+            setNewServiceCategory("NAILS");
+            setIsAddServiceOpen(false);
+            fetchAll();
+        } catch {
+            toast.error("Failed to add service");
+        } finally {
+            setIsSubmittingService(false);
+        }
+    };
+
+    const fetchAll = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [svcRes, txRes, empRes] = await Promise.all([fetch("/api/services"), fetch("/api/transactions"), fetch("/api/employees")]);
+            setServices(await svcRes.json());
+            setTransactions(await txRes.json());
+            setEmployees(await empRes.json());
+        } catch { toast.error("Failed to load data"); }
+        finally { setLoading(false); }
+    }, []);
+
+    useEffect(() => { fetchAll(); }, [fetchAll]);
+
+    const addToCart = (svc: ServiceItem) => {
+        setCart((prev) => {
+            const existing = prev.find((c) => c.service.id === svc.id);
+            if (existing) return prev.map((c) => c.service.id === svc.id ? { ...c, quantity: c.quantity + 1 } : c);
+            return [...prev, { service: svc, quantity: 1 }];
+        });
+    };
+
+    const removeFromCart = (id: string) => setCart((prev) => prev.filter((c) => c.service.id !== id));
+    const cartTotal = cart.reduce((sum, c) => sum + c.service.price * c.quantity, 0);
+
+    const handleCheckout = async () => {
+        const finalCustomerName = customerName.trim() || "-";
+        if (!employeeName) { toast.error("Please select an employee"); return; }
+        if (cart.length === 0) { toast.error("Please select at least one service"); return; }
+
+        let txDateIso = new Date().toISOString();
+        if (transactionDate) {
+            const d = new Date(transactionDate);
+            if (!isNaN(d.getTime())) {
+                txDateIso = d.toISOString();
+            }
+        }
+
+        setProcessing(true);
+        try {
+            const body = {
+                customerName: finalCustomerName,
+                employeeName,
+                paymentMethod,
+                totalAmount: cartTotal,
+                description: cart.map((c) => c.service.name).join(", "),
+                date: txDateIso,
+                items: cart.map((c) => ({ serviceId: c.service.id, quantity: c.quantity, price: c.service.price })),
+            };
+            const res = await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+            if (!res.ok) throw new Error();
+            toast.success(`Payment successful ฿${cartTotal.toLocaleString()} — ${PAYMENT_LABELS[paymentMethod]}`);
+            setCart([]); setCustomerName(""); setEmployeeName(""); setPaymentMethod("CASH"); setTransactionDate(format(new Date(), "yyyy-MM-dd"));
+            fetchAll();
+        } catch { toast.error("Failed to save transaction"); }
+        finally { setProcessing(false); }
+    };
+
+    const filteredSvcs = services.filter((s) => {
+        const matchCat = filterCategory === "ALL" || s.category === filterCategory;
+        return matchCat;
+    });
+
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayTx = transactions.filter((t) => {
+        if (!t.date) return false;
+        return format(new Date(t.date), "yyyy-MM-dd") === todayStr;
+    });
+    const todayRevenue = todayTx.reduce((sum, t) => sum + Number(t.totalAmount), 0);
+
     return (
-      <PinGate storageKey="pin-dashboard">
-        <div className="p-6 space-y-6 max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <Skeleton className="h-8 w-48 mb-2" />
-              <Skeleton className="h-4 w-64" />
+        <div className="p-4 lg:p-6 space-y-6 pb-28 lg:pb-6 relative max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Record Sale</h1>
+                    <p className="text-gray-500 mt-2 flex items-center gap-2">Today's Revenue: <span className="text-3xl font-bold text-rose-600">฿{todayRevenue.toLocaleString()}</span></p>
+                </div>
             </div>
-            <Skeleton className="h-10 w-48 rounded-md" />
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="border-0 shadow-sm">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <Skeleton className="h-10 w-10 rounded-xl" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-5 w-24" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="border-0 shadow-sm h-[320px]">
-              <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
-              <CardContent className="space-y-3">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-sm h-[320px]">
-              <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
-              <CardContent className="space-y-3">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-sm h-[320px]">
-              <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
-              <CardContent className="space-y-3">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
-              </CardContent>
-            </Card>
-          </div>
+
+            <div className="space-y-6">
+                {/* Employee Selection */}
+                <div className="flex justify-center">
+                    <div className="flex flex-wrap gap-3 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
+                        {employees.map(emp => (
+                            <button
+                                key={emp.id}
+                                onClick={() => setEmployeeName(emp.name)}
+                                className={`px-8 py-2.5 rounded-xl text-sm font-semibold transition-all ${employeeName === emp.name
+                                    ? "bg-rose-500 text-white shadow-md"
+                                    : "bg-rose-50 text-rose-500 hover:bg-rose-100"
+                                    }`}
+                            >
+                                {emp.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Date and Customer Row */}
+                <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
+                    <CardContent className="p-4 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white">
+                        <div className="space-y-2">
+                            <Label className="text-gray-700 font-semibold mb-1">Transaction Date</Label>
+                            <div className="relative">
+                                <Input
+                                    type="date"
+                                    value={transactionDate}
+                                    onChange={(e) => setTransactionDate(e.target.value)}
+                                    className="pl-3 pr-10 border-gray-200 h-12 rounded-lg w-full text-gray-600 focus-visible:ring-rose-200"
+                                />
+                                <CalendarIcon className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-gray-700 font-semibold mb-1">Customer Name (Optional)</Label>
+                            <Input
+                                placeholder="Walk-in Customer"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                className="border-gray-200 h-12 rounded-lg text-gray-600 focus-visible:ring-rose-200"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Service Category */}
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                    <Label className="text-gray-700 font-medium mb-3 block">Service Category</Label>
+                    <div className="flex flex-wrap gap-3">
+                        {Object.keys(CATEGORIES).map(catKey => (
+                            <button
+                                key={catKey}
+                                onClick={() => setFilterCategory(catKey)}
+                                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all shadow-sm ${filterCategory === catKey
+                                    ? "bg-rose-500 text-white"
+                                    : "bg-rose-50 text-rose-500 hover:bg-rose-100"
+                                    }`}
+                            >
+                                {CATEGORIES[catKey].label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Select Services Grid */}
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <Label className="text-gray-700 font-medium block">Select Services</Label>
+                        <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-8 gap-1 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700">
+                                    <Plus className="h-3.5 w-3.5" /> Add Service
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>Add New Service</DialogTitle>
+                                </DialogHeader>
+                                <form onSubmit={handleAddService} className="space-y-4 pt-4">
+                                    <div className="space-y-2">
+                                        <Label>Service Name</Label>
+                                        <Input
+                                            placeholder="e.g., Gel Manicure"
+                                            value={newServiceName}
+                                            onChange={(e) => setNewServiceName(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Category</Label>
+                                        <select
+                                            className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                                            value={newServiceCategory}
+                                            onChange={(e) => setNewServiceCategory(e.target.value)}
+                                        >
+                                            {Object.entries(CATEGORIES)
+                                                .filter(([key]) => key !== "ALL")
+                                                .map(([key, value]) => (
+                                                    <option key={key} value={key}>{value.label}</option>
+                                                ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Price (THB)</Label>
+                                        <Input
+                                            type="number"
+                                            placeholder="0"
+                                            min="0"
+                                            value={newServicePrice}
+                                            onChange={(e) => setNewServicePrice(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <Button type="submit" className="w-full bg-rose-500 hover:bg-rose-600 text-white" disabled={isSubmittingService}>
+                                        {isSubmittingService ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                        Save Service
+                                    </Button>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                    {loading ? (
+                        <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-rose-400" /></div>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {filteredSvcs.map((svc) => {
+                                const inCart = cart.find((c) => c.service.id === svc.id);
+                                return (
+                                    <button key={svc.id} onClick={() => addToCart(svc)}
+                                        className={`p-4 rounded-xl border-2 text-left transition-all duration-200 h-28 flex flex-col justify-between ${inCart
+                                            ? "border-rose-400 bg-rose-50 shadow-inner"
+                                            : "border-gray-50 bg-white hover:border-rose-200 hover:shadow-md"
+                                            }`}>
+                                        <div>
+                                            <div className="font-semibold text-gray-800 text-[13px] leading-snug line-clamp-2">{svc.name}</div>
+                                        </div>
+                                        <div className="flex items-end justify-between w-full mt-2">
+                                            <span className="text-[15px] font-bold text-rose-600">{svc.price} THB</span>
+                                            {inCart && <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-[10px] px-1.5 rounded-md min-w-[20px] text-center">{inCart.quantity}</Badge>}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* Selected Services / Cart */}
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 min-h-[140px]">
+                    <Label className="text-gray-700 font-medium mb-4 block">Selected Services</Label>
+                    {cart.length === 0 ? (
+                        <div className="border-2 border-dashed border-gray-200 mt-2 rounded-xl p-8 flex items-center justify-center text-gray-400 text-sm">
+                            <p>No services selected</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {cart.map((item) => (
+                                <div key={item.service.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[15px] font-semibold text-gray-800">{item.service.name}</p>
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right">
+                                            <p className="text-[15px] font-bold text-gray-900">{item.service.price * item.quantity} THB</p>
+                                            <p className="text-xs text-gray-500 font-medium mt-0.5">x {item.quantity}</p>
+                                        </div>
+                                        <button onClick={() => removeFromCart(item.service.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors">
+                                            <Trash2 className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Payment Method */}
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                    <Label className="text-gray-700 font-medium mb-4 block">Payment Method</Label>
+                    <div className="flex flex-wrap gap-3">
+                        {(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map(methodKey => (
+                            <button
+                                key={methodKey}
+                                onClick={() => setPaymentMethod(methodKey)}
+                                className={`px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm ${paymentMethod === methodKey
+                                    ? "border-2 border-rose-400 bg-rose-50 text-rose-600"
+                                    : "border-2 border-transparent bg-gray-50 text-gray-500 hover:bg-gray-100"
+                                    }`}
+                            >
+                                {PAYMENT_LABELS[methodKey]}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Total & Checkout */}
+                <div className="space-y-4 pt-4 pb-8">
+                    <div className="bg-rose-500 rounded-xl p-8 text-center shadow-md relative overflow-hidden">
+                        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+
+                        <p className="text-white/90 text-[15px] font-semibold mb-2">Total Amount</p>
+                        <div className="flex items-baseline justify-center gap-2">
+                            <span className="text-white text-5xl font-bold tracking-tight">{cartTotal}</span>
+                            <span className="text-white/90 text-2xl font-bold tracking-tight">THB</span>
+                        </div>
+                    </div>
+                    <Button
+                        onClick={handleCheckout}
+                        disabled={processing}
+                        className="w-full bg-[#10B981] hover:bg-[#059669] text-white py-8 text-xl font-bold rounded-xl shadow-md transition-all active:scale-[0.98]"
+                    >
+                        {processing ? (
+                            <><Loader2 className="mr-2 h-6 w-6 animate-spin" /> Saving...</>
+                        ) : (
+                            "Confirm Payment"
+                        )}
+                    </Button>
+                </div>
+
+            </div>
         </div>
-      </PinGate>
     );
-  }
-
-  return (
-    <PinGate storageKey="pin-dashboard">
-      <div className="p-6 space-y-6 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              สวัสดี! <Sparkles className="h-5 w-5 text-rose-400" />
-            </h1>
-            <p className="text-sm text-gray-500 mt-0.5 capitalize">{todayTh}</p>
-          </div>
-          <Link href="/records">
-            <Button className="bg-rose-500 hover:bg-rose-600 text-white gap-2 shadow-lg shadow-rose-200">
-              <TrendingUp className="h-4 w-4" /> เปิด POS บันทึกการขาย
-            </Button>
-          </Link>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              label: "รายได้วันนี้",
-              value: `฿${(data?.todayRevenue ?? 0).toLocaleString()}`,
-              icon: TrendingUp,
-              color: "bg-rose-50 text-rose-600",
-              iconBg: "bg-rose-100",
-              target: settings?.dailyTarget || 0,
-              actual: data?.todayRevenue || 0
-            },
-            {
-              label: "รายได้เดือนนี้",
-              value: `฿${(data?.monthlyRevenue ?? 0).toLocaleString()}`,
-              icon: TrendingUp,
-              color: "bg-green-50 text-green-600",
-              iconBg: "bg-green-100",
-              target: settings?.monthlyTarget || 0,
-              actual: data?.monthlyRevenue || 0
-            },
-            {
-              label: "รายจ่ายเดือนนี้",
-              value: `฿${(data?.monthlyExpenses ?? 0).toLocaleString()}`,
-              icon: TrendingDown,
-              color: "bg-orange-50 text-orange-600",
-              iconBg: "bg-orange-100"
-            },
-            {
-              label: "กำไรสุทธิ",
-              value: `฿${netProfit.toLocaleString()}`,
-              icon: Users,
-              color: netProfit >= 0 ? "bg-blue-50 text-blue-600" : "bg-red-50 text-red-600",
-              iconBg: netProfit >= 0 ? "bg-blue-100" : "bg-red-100"
-            },
-          ].map((s) => {
-            const Icon = s.icon;
-            const targetPercent = s.target ? Math.min((s.actual! / s.target) * 100, 100) : 0;
-
-            return (
-              <Card key={s.label} className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`h-10 w-10 rounded-xl ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
-                      <Icon className={`h-5 w-5 ${s.color.split(" ")[1]}`} />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">{s.label}</p>
-                      <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-                    </div>
-                  </div>
-
-                  {s.target !== undefined && s.target > 0 && (
-                    <div className="space-y-1.5 mt-2">
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>เป้าหมาย {s.target.toLocaleString()}</span>
-                        <span className="font-medium text-gray-700">{targetPercent.toFixed(0)}%</span>
-                      </div>
-                      <Progress value={targetPercent} className="h-1.5" />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Upcoming Appointments */}
-          <Card className="border-0 shadow-sm bg-white">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-rose-500" /> นัดหมายที่กำลังมา
-              </CardTitle>
-              <Link href="/appointments">
-                <Button variant="ghost" size="sm" className="text-rose-500 h-7 px-2 text-xs gap-1">ดูทั้งหมด <ArrowRight className="h-3 w-3" /></Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {!data?.upcomingAppointments?.length ? (
-                <div className="text-center py-8 text-gray-400">
-                  <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">ไม่มีนัดหมายที่กำลังมาถึง</p>
-                </div>
-              ) : (
-                data.upcomingAppointments.map((appt) => (
-                  <div key={appt.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="h-8 w-8 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
-                      <Clock className="h-4 w-4 text-rose-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm">{appt.customerName}</p>
-                      <p className="text-xs text-gray-500">{appt.service?.name} · {appt.time}</p>
-                    </div>
-                    <Badge variant="outline" className={`text-xs ${STATUS_COLOR[appt.status] ?? ""}`}>
-                      {STATUS_TH[appt.status] ?? appt.status}
-                    </Badge>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Transactions */}
-          <Card className="border-0 shadow-sm bg-white">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-500" /> รายการขายล่าสุด
-              </CardTitle>
-              <Link href="/records">
-                <Button variant="ghost" size="sm" className="text-rose-500 h-7 px-2 text-xs gap-1">ดูทั้งหมด <ArrowRight className="h-3 w-3" /></Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {!data?.recentTransactions?.length ? (
-                <div className="text-center py-8 text-gray-400">
-                  <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">ยังไม่มีรายการขาย</p>
-                </div>
-              ) : (
-                data.recentTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm">{tx.customerName}</p>
-                      <p className="text-xs text-gray-500">
-                        {tx.date ? format(new Date(tx.date), "d MMM · HH:mm", { locale: th }) : "-"}
-                      </p>
-                    </div>
-                    <span className="text-sm font-bold text-green-600">+฿{tx.totalAmount.toLocaleString()}</span>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Today's Employees */}
-          <Card className="border-0 shadow-sm bg-white">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-500" /> พนักงานประจำวันนี้
-              </CardTitle>
-              <div className="text-xs text-gray-400">{data?.todayEmployees?.length ?? 0} คน</div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {!data?.todayEmployees?.length ? (
-                <div className="text-center py-8 text-gray-400">
-                  <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">ไม่มีข้อมูลพนักงาน</p>
-                </div>
-              ) : (
-                data.todayEmployees.map((emp) => (
-                  <div key={emp.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <Users className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm">{emp.name}</p>
-                      <p className="text-xs text-gray-500">{emp.role === "ADMIN" ? "แอดมิน" : "พนักงาน"}</p>
-                    </div>
-                    <Badge variant="secondary" className="text-xs bg-white">
-                      พร้อมให้บริการ
-                    </Badge>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { href: "/services", label: "รายการบริการ", emoji: "💅", count: data?.totalServices ?? 0, unit: "บริการ" },
-            { href: "/appointments", label: "นัดหมาย", emoji: "📅", count: data?.upcomingAppointments?.length ?? 0, unit: "นัดที่รอ" },
-            { href: "/expenses", label: "รายจ่าย", emoji: "💸", count: `฿${(data?.monthlyExpenses ?? 0).toLocaleString()}`, unit: "เดือนนี้" },
-            { href: "/reports", label: "รายงาน", emoji: "📊", count: "→", unit: "ดูรายงาน" },
-          ].map((item) => (
-            <Link key={item.href} href={item.href}>
-              <Card className="border border-gray-100 shadow-sm hover:shadow-md hover:border-rose-200 transition-all bg-white cursor-pointer">
-                <CardContent className="p-4 text-center">
-                  <div className="text-3xl mb-1">{item.emoji}</div>
-                  <p className="text-sm text-gray-500 mb-1">{item.label}</p>
-                  <p className="text-3xl font-bold text-gray-900">{item.count}</p>
-                  <p className="text-sm text-gray-400">{item.unit}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </PinGate>
-  );
 }

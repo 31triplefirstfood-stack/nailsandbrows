@@ -21,39 +21,30 @@ import Image from "next/image";
 
 const menuItems = [
     {
-        label: "แดชบอร์ด",
+        label: "Record",
         href: "/",
-        icon: LayoutDashboard,
+        icon: PlusCircle,
     },
     {
-        label: "รายการ",
+        label: "Report",
         href: "/items",
         icon: ClipboardList,
     },
     {
-        label: "บันทึก",
-        href: "/records",
-        icon: PlusCircle,
-    },
-    {
-        label: "นัดหมาย",
+        label: "Appointment",
         href: "/appointments",
         icon: CalendarDays,
     },
-    {
-        label: "รายงาน",
-        href: "/reports",
-        icon: BarChart3,
-    },
+
     {
         label: "รายจ่าย",
         href: "/expenses",
         icon: Wallet,
     },
     {
-        label: "พนักงาน",
-        href: "/employees",
-        icon: Users,
+        label: "แดชบอร์ด",
+        href: "/dashboard",
+        icon: LayoutDashboard,
     },
     {
         label: "ตั้งค่า",

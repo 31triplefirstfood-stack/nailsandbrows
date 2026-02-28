@@ -8,6 +8,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         fetchSettings();
+
+        // Check and generate monthly expenses automatically on load
+        const now = new Date().toISOString();
+        fetch(`/api/expenses/monthly?date=${now}`).catch(console.error);
     }, [fetchSettings]);
 
     return <>{children}</>;
