@@ -170,7 +170,7 @@ export default function RecordsPage() {
     const todayRevenue = todayTx.reduce((sum, t) => sum + Number(t.totalAmount), 0);
 
     return (
-        <div className="p-4 lg:p-6 space-y-6 pb-28 lg:pb-6 relative max-w-4xl mx-auto">
+        <div className="p-4 lg:p-6 space-y-6 pb-28 lg:pb-6 relative w-full mx-auto">
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Record Sale</h1>

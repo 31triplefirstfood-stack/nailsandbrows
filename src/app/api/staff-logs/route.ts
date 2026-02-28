@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         console.error("GET /api/staff-logs error:", error);
         return NextResponse.json(
-            { error: "ไม่สามารถดึงข้อมูลผลงานพนักงานได้" },
+            { error: "ไม่สามารถดึงข้อมูลReportได้" },
             { status: 500 }
         );
     }

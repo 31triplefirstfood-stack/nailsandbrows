@@ -21,7 +21,7 @@ import Image from "next/image";
 
 const menuItems = [
     { label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard },
-    { label: "ผลงานพนักงาน", href: "/items", icon: ClipboardList },
+    { label: "Report", href: "/items", icon: ClipboardList },
     { label: "บันทึก", href: "/", icon: PlusCircle },
     { label: "นัดหมาย", href: "/appointments", icon: CalendarDays },
     { label: "รายจ่าย", href: "/expenses", icon: Wallet },
@@ -30,7 +30,7 @@ const menuItems = [
 
 const pageTitles: Record<string, string> = {
     "/dashboard": "แดชบอร์ด",
-    "/items": "ผลงานพนักงาน",
+    "/items": "Report",
     "/": "บันทึกรายการ",
     "/appointments": "นัดหมาย",
     "/expenses": "รายจ่าย",

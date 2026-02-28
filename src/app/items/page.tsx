@@ -94,28 +94,28 @@ export default function StaffLogsPage() {
     const filteredData = selectedEmployee === "ALL" ? data : data.filter((d) => d.employeeName === selectedEmployee);
 
     return (
-        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+        <div className="p-4 md:p-6 w-full mx-auto space-y-6">
             {/* Header / Date Toggles */}
             <div className="flex flex-col items-center space-y-4">
-                <div className="flex items-center gap-2 bg-purple-50 p-1.5 rounded-xl border border-purple-100">
+                <div className="flex items-center gap-2 bg-rose-50 p-1.5 rounded-xl border border-rose-100">
                     <Button
                         variant={range === "today" ? "default" : "ghost"}
                         onClick={() => setRange("today")}
-                        className={cn("rounded-lg", range === "today" ? "bg-purple-500 text-white hover:bg-purple-600" : "text-purple-700 hover:bg-purple-100")}
+                        className={cn("rounded-lg", range === "today" ? "bg-rose-500 text-white hover:bg-rose-600" : "text-rose-700 hover:bg-rose-100")}
                     >
                         Today
                     </Button>
                     <Button
                         variant={range === "weekly" ? "default" : "ghost"}
                         onClick={() => setRange("weekly")}
-                        className={cn("rounded-lg", range === "weekly" ? "bg-purple-500 text-white hover:bg-purple-600" : "text-purple-700 hover:bg-purple-100")}
+                        className={cn("rounded-lg", range === "weekly" ? "bg-rose-500 text-white hover:bg-rose-600" : "text-rose-700 hover:bg-rose-100")}
                     >
                         Weekly
                     </Button>
                     <Button
                         variant={range === "monthly" ? "default" : "ghost"}
                         onClick={() => setRange("monthly")}
-                        className={cn("rounded-lg", range === "monthly" ? "bg-purple-500 text-white hover:bg-purple-600" : "text-purple-700 hover:bg-purple-100")}
+                        className={cn("rounded-lg", range === "monthly" ? "bg-rose-500 text-white hover:bg-rose-600" : "text-rose-700 hover:bg-rose-100")}
                     >
                         Monthly
                     </Button>
@@ -156,7 +156,7 @@ export default function StaffLogsPage() {
                     <Button
                         onClick={handleLoadReport}
                         disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11"
+                        className="w-full bg-rose-500 hover:bg-rose-600 text-white h-11"
                     >
                         {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
                         Load Report Data
@@ -166,7 +166,7 @@ export default function StaffLogsPage() {
 
             {/* Displaying Current Filter */}
             <div className="text-center">
-                <h2 className="text-xl font-bold text-blue-900 tracking-tight">
+                <h2 className="text-xl font-bold text-rose-900 tracking-tight">
                     {range === "today" ? format(new Date(), "dd/MM/yyyy") :
                         range === "weekly" ? "This Week" :
                             range === "monthly" ? "This Month" :
@@ -177,7 +177,7 @@ export default function StaffLogsPage() {
             {/* Staff Cards */}
             {loading && data.length === 0 ? (
                 <div className="flex justify-center p-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                    <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
                 </div>
             ) : filteredData.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
@@ -187,11 +187,11 @@ export default function StaffLogsPage() {
             ) : (
                 <div className="space-y-6">
                     {filteredData.map((stat, idx) => (
-                        <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-purple-100">
+                        <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-rose-100">
                             {/* Card Header */}
-                            <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-4 text-white">
+                            <div className="bg-gradient-to-r from-rose-500 to-pink-500 p-4 text-white">
                                 <h3 className="text-xl font-bold">{stat.employeeName}</h3>
-                                <p className="text-purple-100 text-sm opacity-90">Transaction Count: {stat.transactionCount}</p>
+                                <p className="text-rose-100 text-sm opacity-90">Transaction Count: {stat.transactionCount}</p>
                             </div>
 
                             {/* Card Body */}
@@ -204,7 +204,7 @@ export default function StaffLogsPage() {
                                         return (
                                             <div key={method} className="bg-white border border-gray-100 rounded-xl p-3 text-center shadow-sm">
                                                 <p className="text-xs text-gray-500 font-medium mb-1">{displayLabel}</p>
-                                                <p className={cn("text-base font-bold", summary.amount > 0 ? "text-purple-700" : "text-gray-400")}>
+                                                <p className={cn("text-base font-bold", summary.amount > 0 ? "text-rose-700" : "text-gray-400")}>
                                                     {summary.amount > 0 ? `${summary.amount.toLocaleString()} THB` : "-"}
                                                 </p>
                                                 <p className="text-[10px] text-gray-400 mt-1">({summary.count} items)</p>
@@ -214,16 +214,16 @@ export default function StaffLogsPage() {
                                 </div>
 
                                 {/* Staff Total */}
-                                <div className="bg-purple-50/50 rounded-xl p-4 flex items-center justify-between border border-purple-100">
-                                    <span className="font-bold text-purple-900 border-b-2 border-transparent">Staff Total:</span>
-                                    <span className="text-2xl font-black text-purple-700">{stat.totalAmount.toLocaleString()} THB</span>
+                                <div className="bg-rose-50/50 rounded-xl p-4 flex items-center justify-between border border-rose-100">
+                                    <span className="font-bold text-rose-900 border-b-2 border-transparent">Staff Total:</span>
+                                    <span className="text-2xl font-black text-rose-600">{stat.totalAmount.toLocaleString()} THB</span>
                                 </div>
 
                                 {/* Daily Breakdown Section */}
                                 <div className="pt-2">
-                                    <h4 className="font-bold text-purple-800 text-sm mb-3">Daily Breakdown</h4>
+                                    <h4 className="font-bold text-rose-800 text-sm mb-3">Daily Breakdown</h4>
 
-                                    <div className="bg-blue-50/50 text-blue-800 p-2.5 rounded-lg font-semibold text-sm mb-3">
+                                    <div className="bg-rose-50/50 text-rose-800 p-2.5 rounded-lg font-semibold text-sm mb-3 border border-rose-100">
                                         {range === "today" ? format(new Date(), "dd/MM/yyyy") : range === "date" ? format(new Date(dateParam), "dd/MM/yyyy") : "All transactions"}
                                     </div>
 
@@ -268,7 +268,7 @@ export default function StaffLogsPage() {
                                                                                 <span className="font-medium text-gray-800">{item.service.name}</span>
                                                                                 <span className="text-gray-400 text-xs">x{item.quantity}</span>
                                                                             </div>
-                                                                            <span className="text-blue-600 font-semibold text-xs">{(Number(item.price) * item.quantity).toLocaleString()} THB</span>
+                                                                            <span className="text-rose-600 font-semibold text-xs">{(Number(item.price) * item.quantity).toLocaleString()} THB</span>
                                                                         </div>
                                                                     ))}
                                                                 </div>
