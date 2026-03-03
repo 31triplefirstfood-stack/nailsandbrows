@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, Target, Download, Upload, Loader2, Save, CalendarIcon, Lock, Users } from "lucide-react";
+import { Store, Target, Download, Upload, Loader2, Save, CalendarIcon, Lock, Users, Scissors } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,9 +21,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { EmployeesTab } from "./components/employees-tab";
-import { ReportsTab } from "./components/reports-tab";
-import { BarChart3 } from "lucide-react";
-
+import { ServicesTab } from "./components/services-tab";
 const storeSchema = z.object({
     storeName: z.string().min(1, "กรุณากรอกชื่อร้าน"),
 });
@@ -223,8 +221,8 @@ export default function SettingsClient() {
                         <TabsTrigger value="employees" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-gray-100 transition-all gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
                             <Users className="h-4 w-4" /> พนักงาน
                         </TabsTrigger>
-                        <TabsTrigger value="reports" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-gray-100 transition-all gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
-                            <BarChart3 className="h-4 w-4" /> รายงาน
+                        <TabsTrigger value="services" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-gray-100 transition-all gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                            <Scissors className="h-4 w-4" /> บริการ
                         </TabsTrigger>
                         <TabsTrigger value="export" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-gray-100 transition-all gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
                             <Download className="h-4 w-4" /> ส่งออกข้อมูล
@@ -580,8 +578,8 @@ export default function SettingsClient() {
                     <EmployeesTab />
                 </TabsContent>
 
-                <TabsContent value="reports" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <ReportsTab />
+                <TabsContent value="services" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <ServicesTab />
                 </TabsContent>
             </Tabs>
         </div>

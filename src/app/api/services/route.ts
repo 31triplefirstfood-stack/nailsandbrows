@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
         const services = await prisma.serviceItem.findMany({
             where,
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ order: "asc" }, { createdAt: "desc" }],
         });
 
         return NextResponse.json(services);
@@ -38,8 +38,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: message }, { status: 400 });
         }
         const { name, category, price, durationMinutes } = parsed.data;
+
+        // Find the maximum order for the new service
+        const maxOrderService = await prisma.serviceItem.findFirst({
+            orderBy: { order: 'desc' },
+            select: { order: true }
+        });
+        const nextOrder = maxOrderService ? maxOrderService.order + 1 : 0;
+
         const service = await prisma.serviceItem.create({
-            data: { name, category, price, durationMinutes },
+            data: { name, category, price, durationMinutes, order: nextOrder },
         });
         return NextResponse.json(service, { status: 201 });
     } catch (error) {

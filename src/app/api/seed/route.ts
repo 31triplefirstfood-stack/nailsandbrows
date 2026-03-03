@@ -16,7 +16,13 @@ export async function POST() {
             data: { name: "ผู้ดูแลระบบ", email: "admin@nailsandbrows.com", password: "$2b$10$dummyhashforseeding1234567890", role: "ADMIN" },
         });
         await prisma.user.create({
-            data: { name: "พนักงาน สมศรี", email: "staff@nailsandbrows.com", password: "$2b$10$dummyhashforseeding1234567890", role: "STAFF" },
+            data: { name: "สมศรี", email: "staff@nailsandbrows.com", password: "$2b$10$dummyhashforseeding1234567890", role: "STAFF", salary: 15000, commissionRate: 10 },
+        });
+        await prisma.user.create({
+            data: { name: "น้ำ", email: "nam@nailsandbrows.com", password: "$2b$10$dummyhashforseeding1234567890", role: "STAFF", salary: 15000, commissionRate: 10 },
+        });
+        await prisma.user.create({
+            data: { name: "ฟ้า", email: "fah@nailsandbrows.com", password: "$2b$10$dummyhashforseeding1234567890", role: "STAFF", salary: 18000, commissionRate: 15 },
         });
 
         // Service Items
@@ -89,13 +95,13 @@ export async function POST() {
         // Sample Transactions
         await prisma.transaction.create({
             data: {
-                customerName: "คุณหญิง", totalAmount: 1150, paymentMethod: "CASH", description: "ทาเล็บเจล + ต่อเล็บเจล", date: today,
+                customerName: "คุณหญิง", employeeName: "สมศรี", totalAmount: 1150, paymentMethod: "CASH", description: "ทาเล็บเจล + ต่อเล็บเจล", date: today,
                 items: { create: [{ serviceId: services[0].id, quantity: 1, price: 350 }, { serviceId: services[1].id, quantity: 1, price: 800 }] }
             },
         });
         await prisma.transaction.create({
             data: {
-                customerName: "คุณน้ำ", totalAmount: 2500, paymentMethod: "TRANSFER", description: "ฝังสีคิ้ว", date: today,
+                customerName: "คุณน้ำ", employeeName: "ผู้ดูแลระบบ", totalAmount: 2500, paymentMethod: "TRANSFER", description: "ฝังสีคิ้ว", date: today,
                 items: { create: [{ serviceId: services[5].id, quantity: 1, price: 2500 }] }
             },
         });
@@ -103,8 +109,26 @@ export async function POST() {
         yesterday.setDate(yesterday.getDate() - 1);
         await prisma.transaction.create({
             data: {
-                customerName: "คุณแก้ว", totalAmount: 600, paymentMethod: "PROMPTPAY", description: "ทำเล็บมือ + เท้า", date: yesterday,
+                customerName: "คุณแก้ว", employeeName: "น้ำ", totalAmount: 600, paymentMethod: "PROMPTPAY", description: "ทำเล็บมือ + เท้า", date: yesterday,
                 items: { create: [{ serviceId: services[4].id, quantity: 1, price: 600 }] }
+            },
+        });
+        await prisma.transaction.create({
+            data: {
+                customerName: "คุณสมหญิง", employeeName: "ฟ้า", totalAmount: 1500, paymentMethod: "CREDIT_CARD", description: "ต่อขนตา", date: today,
+                items: { create: [{ serviceId: services[20].id, quantity: 1, price: 1500 }] }
+            },
+        });
+        await prisma.transaction.create({
+            data: {
+                customerName: "คุณพรนภา", employeeName: "น้ำ", totalAmount: 400, paymentMethod: "CASH", description: "สปาเท้า", date: today,
+                items: { create: [{ serviceId: services[3].id, quantity: 1, price: 400 }] }
+            },
+        });
+        await prisma.transaction.create({
+            data: {
+                customerName: "คุณนลิน", employeeName: "ฟ้า", totalAmount: 850, paymentMethod: "TRANSFER", description: "ต่อเล็บเจล + ทาสี", date: yesterday,
+                items: { create: [{ serviceId: services[4].id, quantity: 1, price: 650 }, { serviceId: services[3].id, quantity: 1, price: 200 }] }
             },
         });
 
@@ -119,7 +143,7 @@ export async function POST() {
         return NextResponse.json({
             message: "🎉 Seeding เสร็จสิ้น!",
             data: {
-                users: 2,
+                users: 4,
                 services: services.length,
                 appointments: 4,
                 transactions: 3,

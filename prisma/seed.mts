@@ -119,7 +119,29 @@ async function main() {
             items: { create: [{ serviceId: services[2].id, quantity: 1, price: 700 }] }
         },
     });
-    console.log("✅ สร้างรายการขาย 3 รายการ");
+    await prisma.transaction.create({
+        data: {
+            employeeName: "พนักงาน ฟ้า",
+            customerName: "คุณสมหญิง", totalAmount: 1500, paymentMethod: "CREDIT_CARD", description: "ต่อขนตา", date: today,
+            items: { create: [{ serviceId: services[29].id, quantity: 1, price: 1500 }] }
+        },
+    });
+    await prisma.transaction.create({
+        data: {
+            employeeName: "พนักงาน น้ำ",
+            customerName: "คุณพรนภา", totalAmount: 400, paymentMethod: "CASH", description: "สปาเท้า", date: today,
+            items: { create: [{ serviceId: services[1].id, quantity: 1, price: 400 }] }
+        },
+    });
+    await prisma.transaction.create({
+        data: {
+            employeeName: "พนักงาน ฟ้า",
+            customerName: "คุณนลิน", totalAmount: 850, paymentMethod: "TRANSFER", description: "ต่อเล็บเจล + ทาสี", date: yesterday,
+            items: { create: [{ serviceId: services[3].id, quantity: 1, price: 650 }, { serviceId: services[4].id, quantity: 1, price: 200 }] }
+        },
+    });
+
+    console.log("✅ สร้างรายการขาย 6 รายการ");
 
     // Sample Expenses
     const expenses = await Promise.all([

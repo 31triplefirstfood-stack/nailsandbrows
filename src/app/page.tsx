@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Search, CheckCircle, Loader2, Receipt, CalendarIcon } from "lucide-react";
+import { Trash2, Loader2, CalendarIcon, Settings2, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { th } from "date-fns/locale";
 import {
     Dialog,
     DialogContent,
@@ -21,18 +19,45 @@ import {
 
 type PaymentMethod = "CASH" | "CREDIT_CARD" | "PROMPTPAY" | "GOWABI" | "ALIPAY";
 
-interface ServiceItem { id: string; name: string; category: string; price: number; durationMinutes: number; }
+interface ServiceItem { id: string; name: string; category: string; price: number; durationMinutes: number; order: number; }
 interface CartItem { service: ServiceItem; quantity: number; }
 interface Employee { id: string; name: string; role: string; }
-interface Transaction {
-    id: string;
-    customerName: string;
-    employeeName: string;
-    totalAmount: number;
-    paymentMethod: PaymentMethod;
-    description: string;
-    date: string;
-    items: { service: ServiceItem; quantity: number; price: number }[];
+
+function SwapableServiceCard({ svc, inCart, isEditingLayout, isSelectedForSwap, onClick }: { svc: ServiceItem, inCart: any, isEditingLayout: boolean, isSelectedForSwap: boolean, onClick: () => void }) {
+    let cardStyle = "";
+    if (isEditingLayout) {
+        if (isSelectedForSwap) {
+            cardStyle = "border-orange-500 bg-orange-50 shadow-md ring-4 ring-orange-500/20 scale-[1.02] z-10";
+        } else {
+            cardStyle = "border-gray-300 border-dashed hover:border-orange-300 hover:bg-orange-50/50 opacity-80 hover:opacity-100";
+        }
+    } else {
+        if (inCart) {
+            cardStyle = "border-rose-400 bg-rose-50 shadow-inner";
+        } else {
+            cardStyle = "border-rose-100 hover:border-rose-200 hover:shadow-md";
+        }
+    }
+
+    return (
+        <div
+            onClick={onClick}
+            className={`p-4 rounded-xl border-2 text-left transition-all duration-200 h-28 flex flex-col justify-between relative bg-white select-none cursor-pointer ${cardStyle}`}
+        >
+            {isSelectedForSwap && (
+                <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center shadow-md animate-pulse border-2 border-white z-20">
+                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                </div>
+            )}
+            <div>
+                <div className={`font-semibold text-[13px] leading-snug line-clamp-2 ${isEditingLayout ? 'text-gray-600' : 'text-gray-800'}`}>{svc.name}</div>
+            </div>
+            <div className="flex items-end justify-between w-full mt-2">
+                <span className={`text-[15px] font-bold ${isEditingLayout && !isSelectedForSwap ? 'text-gray-400' : 'text-rose-600'}`}>{svc.price} THB</span>
+                {!isEditingLayout && inCart && <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-[10px] px-1.5 rounded-md min-w-[20px] text-center">{inCart.quantity}</Badge>}
+            </div>
+        </div>
+    );
 }
 
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
@@ -40,7 +65,6 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
 };
 
 const CATEGORIES: Record<string, { label: string }> = {
-    ALL: { label: "All" },
     NAILS: { label: "Nails" },
     EYELASH: { label: "Eyelash" },
     PERMANENT_MAKEUP: { label: "Permanent Makeup" },
@@ -49,63 +73,53 @@ const CATEGORIES: Record<string, { label: string }> = {
 
 export default function RecordsPage() {
     const [services, setServices] = useState<ServiceItem[]>([]);
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState<CartItem[]>([]);
-    const [customerName, setCustomerName] = useState("");
     const [transactionDate, setTransactionDate] = useState(format(new Date(), "yyyy-MM-dd"));
     const [employeeName, setEmployeeName] = useState("");
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
-    const [filterCategory, setFilterCategory] = useState<string>("ALL");
+    const [filterCategory, setFilterCategory] = useState<string>("NAILS");
     const [processing, setProcessing] = useState(false);
+    const [isEditingLayout, setIsEditingLayout] = useState(false);
+    const [selectedForSwap, setSelectedForSwap] = useState<string | null>(null);
 
-    const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
-    const [newServiceName, setNewServiceName] = useState("");
-    const [newServicePrice, setNewServicePrice] = useState("");
-    const [newServiceCategory, setNewServiceCategory] = useState("NAILS");
-    const [isSubmittingService, setIsSubmittingService] = useState(false);
+    const toggleEditLayout = () => {
+        setIsEditingLayout(!isEditingLayout);
+        setSelectedForSwap(null);
+    };
 
-    const handleAddService = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newServiceName || !newServicePrice) {
-            toast.error("Please enter service name and price");
-            return;
-        }
-
-        setIsSubmittingService(true);
-        try {
-            const body = {
-                name: newServiceName,
-                category: newServiceCategory,
-                price: Number(newServicePrice),
-                durationMinutes: 60,
-            };
-            const res = await fetch("/api/services", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
+    const handleSwapClick = (id: string) => {
+        if (!selectedForSwap) {
+            setSelectedForSwap(id);
+        } else if (selectedForSwap === id) {
+            setSelectedForSwap(null);
+        } else {
+            setServices((prev) => {
+                const newArray = [...prev];
+                const idx1 = newArray.findIndex(s => s.id === selectedForSwap);
+                const idx2 = newArray.findIndex(s => s.id === id);
+                if (idx1 !== -1 && idx2 !== -1) {
+                    const temp = newArray[idx1];
+                    newArray[idx1] = newArray[idx2];
+                    newArray[idx2] = temp;
+                    fetch('/api/services/reorder', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newArray.map((item, index) => ({ id: item.id, order: index }))),
+                    }).catch(() => toast.error('เกิดข้อผิดพลาดในการบันทึกการจัดเรียง'));
+                }
+                return newArray;
             });
-            if (!res.ok) throw new Error();
-            toast.success("Service added successfully");
-            setNewServiceName("");
-            setNewServicePrice("");
-            setNewServiceCategory("NAILS");
-            setIsAddServiceOpen(false);
-            fetchAll();
-        } catch {
-            toast.error("Failed to add service");
-        } finally {
-            setIsSubmittingService(false);
+            setSelectedForSwap(null);
         }
     };
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
         try {
-            const [svcRes, txRes, empRes] = await Promise.all([fetch("/api/services"), fetch("/api/transactions"), fetch("/api/employees")]);
+            const [svcRes, empRes] = await Promise.all([fetch("/api/services"), fetch("/api/employees")]);
             setServices(await svcRes.json());
-            setTransactions(await txRes.json());
             setEmployees(await empRes.json());
         } catch { toast.error("Failed to load data"); }
         finally { setLoading(false); }
@@ -125,22 +139,19 @@ export default function RecordsPage() {
     const cartTotal = cart.reduce((sum, c) => sum + c.service.price * c.quantity, 0);
 
     const handleCheckout = async () => {
-        const finalCustomerName = customerName.trim() || "-";
         if (!employeeName) { toast.error("Please select an employee"); return; }
         if (cart.length === 0) { toast.error("Please select at least one service"); return; }
 
         let txDateIso = new Date().toISOString();
         if (transactionDate) {
             const d = new Date(transactionDate);
-            if (!isNaN(d.getTime())) {
-                txDateIso = d.toISOString();
-            }
+            if (!isNaN(d.getTime())) txDateIso = d.toISOString();
         }
 
         setProcessing(true);
         try {
             const body = {
-                customerName: finalCustomerName,
+                customerName: "-",
                 employeeName,
                 paymentMethod,
                 totalAmount: cartTotal,
@@ -151,33 +162,16 @@ export default function RecordsPage() {
             const res = await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
             if (!res.ok) throw new Error();
             toast.success(`Payment successful ฿${cartTotal.toLocaleString()} — ${PAYMENT_LABELS[paymentMethod]}`);
-            setCart([]); setCustomerName(""); setEmployeeName(""); setPaymentMethod("CASH"); setTransactionDate(format(new Date(), "yyyy-MM-dd"));
+            setCart([]); setEmployeeName(""); setPaymentMethod("CASH"); setTransactionDate(format(new Date(), "yyyy-MM-dd"));
             fetchAll();
         } catch { toast.error("Failed to save transaction"); }
         finally { setProcessing(false); }
     };
 
-    const filteredSvcs = services.filter((s) => {
-        const matchCat = filterCategory === "ALL" || s.category === filterCategory;
-        return matchCat;
-    });
-
-    const todayStr = format(new Date(), "yyyy-MM-dd");
-    const todayTx = transactions.filter((t) => {
-        if (!t.date) return false;
-        return format(new Date(t.date), "yyyy-MM-dd") === todayStr;
-    });
-    const todayRevenue = todayTx.reduce((sum, t) => sum + Number(t.totalAmount), 0);
+    const filteredSvcs = services.filter((s) => s.category === filterCategory);
 
     return (
         <div className="p-4 lg:p-6 space-y-6 pb-28 lg:pb-6 relative w-full mx-auto">
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Record Sale</h1>
-                    <p className="text-gray-500 mt-2 flex items-center gap-2">Today's Revenue: <span className="text-3xl font-bold text-rose-600">฿{todayRevenue.toLocaleString()}</span></p>
-                </div>
-            </div>
-
             <div className="space-y-6">
                 {/* Employee Selection */}
                 <div className="flex justify-center">
@@ -197,9 +191,9 @@ export default function RecordsPage() {
                     </div>
                 </div>
 
-                {/* Date and Customer Row */}
+                {/* Date Row */}
                 <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
-                    <CardContent className="p-4 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white">
+                    <CardContent className="p-4 pt-6 grid grid-cols-1 gap-6 bg-white">
                         <div className="space-y-2">
                             <Label className="text-gray-700 font-semibold mb-1">Transaction Date</Label>
                             <div className="relative">
@@ -211,15 +205,6 @@ export default function RecordsPage() {
                                 />
                                 <CalendarIcon className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-gray-700 font-semibold mb-1">Customer Name (Optional)</Label>
-                            <Input
-                                placeholder="Walk-in Customer"
-                                value={customerName}
-                                onChange={(e) => setCustomerName(e.target.value)}
-                                className="border-gray-200 h-12 rounded-lg text-gray-600 focus-visible:ring-rose-200"
-                            />
                         </div>
                     </CardContent>
                 </Card>
@@ -243,85 +228,39 @@ export default function RecordsPage() {
                     </div>
                 </div>
 
-                {/* Select Services Grid */}
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between mb-4">
                         <Label className="text-gray-700 font-medium block">Select Services</Label>
-                        <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-8 gap-1 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700">
-                                    <Plus className="h-3.5 w-3.5" /> Add Service
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                    <DialogTitle>Add New Service</DialogTitle>
-                                </DialogHeader>
-                                <form onSubmit={handleAddService} className="space-y-4 pt-4">
-                                    <div className="space-y-2">
-                                        <Label>Service Name</Label>
-                                        <Input
-                                            placeholder="e.g., Gel Manicure"
-                                            value={newServiceName}
-                                            onChange={(e) => setNewServiceName(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Category</Label>
-                                        <select
-                                            className="w-full h-10 px-3 py-2 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                                            value={newServiceCategory}
-                                            onChange={(e) => setNewServiceCategory(e.target.value)}
-                                        >
-                                            {Object.entries(CATEGORIES)
-                                                .filter(([key]) => key !== "ALL")
-                                                .map(([key, value]) => (
-                                                    <option key={key} value={key}>{value.label}</option>
-                                                ))}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Price (THB)</Label>
-                                        <Input
-                                            type="number"
-                                            placeholder="0"
-                                            min="0"
-                                            value={newServicePrice}
-                                            onChange={(e) => setNewServicePrice(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <Button type="submit" className="w-full bg-rose-500 hover:bg-rose-600 text-white" disabled={isSubmittingService}>
-                                        {isSubmittingService ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                        Save Service
-                                    </Button>
-                                </form>
-                            </DialogContent>
-                        </Dialog>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className={`rounded-lg transition-all h-8 px-3 text-xs ${isEditingLayout ? 'bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100 hover:text-orange-700' : 'text-gray-500'}`}
+                            onClick={toggleEditLayout}
+                        >
+                            <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+                            {isEditingLayout ? "เรียบร้อย" : "จัดเรียงบริการ"}
+                        </Button>
                     </div>
                     {loading ? (
                         <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-rose-400" /></div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {filteredSvcs.map((svc) => {
-                                const inCart = cart.find((c) => c.service.id === svc.id);
-                                return (
-                                    <button key={svc.id} onClick={() => addToCart(svc)}
-                                        className={`p-4 rounded-xl border-2 text-left transition-all duration-200 h-28 flex flex-col justify-between ${inCart
-                                            ? "border-rose-400 bg-rose-50 shadow-inner"
-                                            : "border-gray-50 bg-white hover:border-rose-200 hover:shadow-md"
-                                            }`}>
-                                        <div>
-                                            <div className="font-semibold text-gray-800 text-[13px] leading-snug line-clamp-2">{svc.name}</div>
-                                        </div>
-                                        <div className="flex items-end justify-between w-full mt-2">
-                                            <span className="text-[15px] font-bold text-rose-600">{svc.price} THB</span>
-                                            {inCart && <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-[10px] px-1.5 rounded-md min-w-[20px] text-center">{inCart.quantity}</Badge>}
-                                        </div>
-                                    </button>
-                                );
-                            })}
+                            {filteredSvcs.map((svc) => (
+                                <SwapableServiceCard
+                                    key={svc.id}
+                                    svc={svc}
+                                    inCart={cart.find((c) => c.service.id === svc.id)}
+                                    isEditingLayout={isEditingLayout}
+                                    isSelectedForSwap={selectedForSwap === svc.id}
+                                    onClick={() => {
+                                        if (isEditingLayout) {
+                                            handleSwapClick(svc.id);
+                                        } else {
+                                            addToCart(svc);
+                                        }
+                                    }}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>
@@ -378,7 +317,6 @@ export default function RecordsPage() {
                 <div className="space-y-4 pt-4 pb-8">
                     <div className="bg-rose-500 rounded-xl p-8 text-center shadow-md relative overflow-hidden">
                         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-
                         <p className="text-white/90 text-[15px] font-semibold mb-2">Total Amount</p>
                         <div className="flex items-baseline justify-center gap-2">
                             <span className="text-white text-5xl font-bold tracking-tight">{cartTotal}</span>
@@ -397,7 +335,6 @@ export default function RecordsPage() {
                         )}
                     </Button>
                 </div>
-
             </div>
         </div>
     );

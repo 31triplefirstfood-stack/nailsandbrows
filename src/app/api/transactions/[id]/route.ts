@@ -47,3 +47,27 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
         );
     }
 }
+
+// PATCH transaction
+export async function PATCH(request: NextRequest, { params }: Params) {
+    try {
+        const { id } = await params;
+        const body = await request.json();
+
+        const updated = await prisma.transaction.update({
+            where: { id },
+            data: {
+                paymentMethod: body.paymentMethod,
+                ...(body.totalAmount !== undefined && { totalAmount: body.totalAmount }),
+            }
+        });
+
+        return NextResponse.json(updated);
+    } catch (error) {
+        console.error("PATCH /api/transactions/[id] error:", error);
+        return NextResponse.json(
+            { error: "ไม่สามารถแก้ไขรายการขายได้" },
+            { status: 500 }
+        );
+    }
+}

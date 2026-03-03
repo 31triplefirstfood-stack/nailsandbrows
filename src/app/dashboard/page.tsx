@@ -41,7 +41,9 @@ const BarTooltip = ({ active, payload, label }: { active?: boolean; payload?: { 
 
 interface DashboardData {
   todayRevenue: number;
+  todayPaymentBreakdown?: Record<string, number>;
   monthlyRevenue: number;
+  monthlyPaymentBreakdown?: Record<string, number>;
   monthlyExpenses: number;
   recentTransactions: Array<{ id: string; customerName: string; totalAmount: number; paymentMethod: string; date: string }>;
   totalServices: number;
@@ -60,6 +62,9 @@ const STATUS_COLOR: Record<string, string> = {
 };
 const STATUS_TH: Record<string, string> = {
   PENDING: "รอยืนยัน", CONFIRMED: "ยืนยันแล้ว", COMPLETED: "เสร็จสิ้น", CANCELLED: "ยกเลิก"
+};
+const PAYMENT_LABELS: Record<string, string> = {
+  CASH: "เงินสด", CREDIT_CARD: "บัตรเครดิต", PROMPTPAY: "โอนเงิน", GOWABI: "Gowabi", ALIPAY: "Alipay"
 };
 
 export default function DashboardPage() {
@@ -180,7 +185,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
           {[
             {
               label: "รายได้วันนี้",
@@ -189,7 +194,8 @@ export default function DashboardPage() {
               color: "bg-rose-50 text-rose-600",
               iconBg: "bg-rose-100",
               target: settings?.dailyTarget || 0,
-              actual: data?.todayRevenue || 0
+              actual: data?.todayRevenue || 0,
+              breakdown: data?.todayPaymentBreakdown
             },
             {
               label: "รายได้เดือนนี้",
@@ -198,7 +204,8 @@ export default function DashboardPage() {
               color: "bg-green-50 text-green-600",
               iconBg: "bg-green-100",
               target: settings?.monthlyTarget || 0,
-              actual: data?.monthlyRevenue || 0
+              actual: data?.monthlyRevenue || 0,
+              breakdown: data?.monthlyPaymentBreakdown
             },
             {
               label: "รายจ่ายเดือนนี้",
@@ -219,25 +226,41 @@ export default function DashboardPage() {
             const targetPercent = s.target ? Math.min((s.actual! / s.target) * 100, 100) : 0;
 
             return (
-              <Card key={s.label} className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center sm:items-start gap-3 mb-3">
-                    <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
-                      <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${s.color.split(" ")[1]}`} />
+              <Card key={s.label} className="relative overflow-hidden border border-gray-100/60 shadow-sm bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-2xl group">
+                <CardContent className="p-5">
+                  <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-20 transition-transform duration-500 group-hover:scale-150 ${s.iconBg}`} />
+
+                  <div className="flex items-center sm:items-start gap-4 mb-4 relative z-10">
+                    <div className={`h-12 w-12 rounded-2xl ${s.iconBg} flex items-center justify-center flex-shrink-0 shadow-inner`}>
+                      <Icon className={`h-6 w-6 ${s.color.split(" ")[1]}`} />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm text-gray-500 truncate">{s.label}</p>
-                      <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{s.value}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-500 mb-1 truncate">{s.label}</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-gray-900 truncate tracking-tight">{s.value}</p>
                     </div>
                   </div>
 
                   {s.target !== undefined && s.target > 0 && (
-                    <div className="space-y-1.5 mt-2">
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="space-y-2 mt-4 relative z-10">
+                      <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
                         <span>เป้าหมาย {s.target.toLocaleString()}</span>
-                        <span className="font-medium text-gray-700">{targetPercent.toFixed(0)}%</span>
+                        <span className="text-gray-900">{targetPercent.toFixed(0)}%</span>
                       </div>
-                      <Progress value={targetPercent} className="h-1.5" />
+                      <Progress value={targetPercent} className="h-2 bg-gray-100" />
+                    </div>
+                  )}
+
+                  {s.breakdown && Object.keys(s.breakdown).length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-100/80 flex flex-col gap-2.5 relative z-10">
+                      {Object.entries(s.breakdown).map(([method, amount]) => (
+                        <div key={method} className="flex justify-between items-center text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${PAYMENT_LABELS[method] === "เงินสด" ? "bg-emerald-400" : PAYMENT_LABELS[method] === "โอนเงิน" ? "bg-blue-400" : PAYMENT_LABELS[method] === "บัตรเครดิต" ? "bg-purple-400" : "bg-orange-400"}`} />
+                            <span className="text-gray-500 font-medium">{PAYMENT_LABELS[method] || method}</span>
+                          </div>
+                          <span className="font-bold text-gray-700">฿{amount.toLocaleString()}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -246,9 +269,9 @@ export default function DashboardPage() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Bar Chart — Monthly Income vs Expenses */}
-          <Card className="lg:col-span-2 border border-gray-100 shadow-sm bg-white rounded-xl">
+          <Card className="border border-gray-100 shadow-sm bg-white rounded-xl">
             <CardHeader className="pb-2 pt-6 px-6">
               <CardTitle className="text-base flex items-center gap-2">
                 <BarChart2 className="h-4 w-4 text-rose-500" />
@@ -270,41 +293,6 @@ export default function DashboardPage() {
                   <Bar dataKey="expenses" name="รายจ่าย" fill="#fda4af" radius={[6, 6, 0, 0]} maxBarSize={32} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Recent Transactions */}
-          <Card className="border border-gray-100 shadow-sm bg-white rounded-xl">
-            <CardHeader className="pb-3 pt-6 px-6 flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-500" /> รายการขายล่าสุด
-              </CardTitle>
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="text-rose-500 h-7 px-2 text-xs gap-1">ดูทั้งหมด <ArrowRight className="h-3 w-3" /></Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="px-6 pb-6 pt-0 space-y-3">
-              {!data?.recentTransactions?.length ? (
-                <div className="text-center py-8 text-gray-400">
-                  <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">ยังไม่มีรายการขาย</p>
-                </div>
-              ) : (
-                data.recentTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm">{tx.customerName}</p>
-                      <p className="text-xs text-gray-500">
-                        {tx.date ? format(new Date(tx.date), "d MMM · HH:mm", { locale: th }) : "-"}
-                      </p>
-                    </div>
-                    <span className="text-sm font-bold text-green-600">+฿{tx.totalAmount.toLocaleString()}</span>
-                  </div>
-                ))
-              )}
             </CardContent>
           </Card>
         </div>

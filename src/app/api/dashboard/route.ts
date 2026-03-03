@@ -51,6 +51,12 @@ export async function GET(request: Request) {
             0
         );
 
+        const todayPaymentBreakdown = todayTransactions.reduce((acc, t) => {
+            const method = t.paymentMethod || 'UNKNOWN';
+            acc[method] = (acc[method] || 0) + Number(t.totalAmount);
+            return acc;
+        }, {} as Record<string, number>);
+
         // Monthly revenue
         const monthTransactions = await prisma.transaction.findMany({
             where: { date: { gte: monthStart, lt: monthEnd } },
@@ -59,6 +65,12 @@ export async function GET(request: Request) {
             (sum, t) => sum + Number(t.totalAmount),
             0
         );
+
+        const monthlyPaymentBreakdown = monthTransactions.reduce((acc, t) => {
+            const method = t.paymentMethod || 'UNKNOWN';
+            acc[method] = (acc[method] || 0) + Number(t.totalAmount);
+            return acc;
+        }, {} as Record<string, number>);
 
         // Monthly expenses
         const monthExpenses = await prisma.expense.findMany({
@@ -111,7 +123,9 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             todayRevenue,
+            todayPaymentBreakdown,
             monthlyRevenue: monthRevenue,
+            monthlyPaymentBreakdown,
             monthlyExpenses: monthExpenseTotal,
             todayAppointments,
             todayCustomers,

@@ -9,30 +9,26 @@ export async function GET(request: NextRequest) {
 
         const where: Record<string, any> = {};
 
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = now.getMonth();
-        const d = now.getDate();
+        const anchorDate = dateParam ? new Date(dateParam) : new Date();
+        const y = anchorDate.getFullYear();
+        const m = anchorDate.getMonth();
+        const d = anchorDate.getDate();
 
-        if (dateParam) {
-            const date = new Date(dateParam);
-            const nextDay = new Date(date);
-            nextDay.setDate(nextDay.getDate() + 1);
-            where.date = { gte: date, lt: nextDay };
-        } else if (range === "today") {
+        if (range === "monthly") {
+            const startOfMonth = new Date(y, m, 1);
+            const endOfMonth = new Date(y, m + 1, 1);
+            where.date = { gte: startOfMonth, lt: endOfMonth };
+        } else if (range === "weekly") {
+            const day = anchorDate.getDay();
+            const diff = anchorDate.getDate() - day;
+            const startOfWeek = new Date(y, m, diff);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 7);
+            where.date = { gte: startOfWeek, lt: endOfWeek };
+        } else { // today or date
             const startOfDay = new Date(y, m, d);
             const endOfDay = new Date(y, m, d + 1);
             where.date = { gte: startOfDay, lt: endOfDay };
-        } else if (range === "weekly") {
-            const day = now.getDay();
-            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-            const startOfWeek = new Date(y, m, diff);
-            const endOfDay = new Date(y, m, d + 1);
-            where.date = { gte: startOfWeek, lt: endOfDay };
-        } else if (range === "monthly") {
-            const startOfMonth = new Date(y, m, 1);
-            const endOfDay = new Date(y, m, d + 1);
-            where.date = { gte: startOfMonth, lt: endOfDay };
         }
 
         const transactions = await prisma.transaction.findMany({

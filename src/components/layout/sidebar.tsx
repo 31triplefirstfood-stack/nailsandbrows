@@ -7,16 +7,17 @@ import {
     ClipboardList,
     PlusCircle,
     CalendarDays,
-    BarChart3,
     Wallet,
     Settings,
     Sparkles,
     ChevronLeft,
     Users,
+    X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useSettingsStore } from "@/store/settings";
+import { useSidebarStore } from "@/store/sidebar";
 import Image from "next/image";
 
 const menuItems = [
@@ -27,9 +28,10 @@ const menuItems = [
     },
     {
         label: "Report",
-        href: "/items",
+        href: "/report",
         icon: ClipboardList,
     },
+
     {
         label: "Appointment",
         href: "/appointments",
@@ -41,6 +43,7 @@ const menuItems = [
         href: "/expenses",
         icon: Wallet,
     },
+
     {
         label: "แดชบอร์ด",
         href: "/dashboard",
@@ -57,37 +60,56 @@ export function Sidebar() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
     const { settings, isLoading } = useSettingsStore();
+    const { isOpen, setIsOpen } = useSidebarStore();
 
     return (
         <>
+            {/* Mobile Backdrop */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
+
             <aside
                 className={cn(
-                    "hidden lg:flex flex-col bg-white border-rose-100 transition-all duration-300 ease-in-out shrink-0",
-                    collapsed ? "w-0 border-r-0 overflow-hidden opacity-0" : "w-64 border-r opacity-100"
+                    "fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-rose-100 transition-all duration-300 ease-in-out shrink-0 lg:static lg:translate-x-0",
+                    isOpen ? "translate-x-0 w-72 shadow-2xl lg:shadow-none" : "-translate-x-full w-72 lg:w-auto lg:shadow-none",
+                    collapsed ? "lg:w-0 lg:border-r-0 lg:overflow-hidden lg:opacity-0" : "lg:w-64 lg:border-r lg:opacity-100"
                 )}
             >
                 {/* Logo */}
                 <div className={cn(
-                    "flex items-center gap-3 px-4 h-16 border-b border-rose-100",
-                    collapsed && "justify-center px-2"
+                    "flex items-center justify-between gap-3 px-4 h-16 border-b border-rose-100",
+                    collapsed && "lg:justify-center lg:px-2"
                 )}>
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 shadow-md shadow-rose-200 overflow-hidden relative">
-                        {!isLoading && settings?.storeLogo ? (
-                            <Image src={settings.storeLogo} alt="Store Logo" fill className="object-cover" />
-                        ) : (
-                            <Sparkles className="h-5 w-5 text-white" />
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 shadow-md shadow-rose-200 overflow-hidden relative">
+                            {!isLoading && settings?.storeLogo ? (
+                                <Image src={settings.storeLogo} alt="Store Logo" fill className="object-cover" />
+                            ) : (
+                                <Sparkles className="h-5 w-5 text-white" />
+                            )}
+                        </div>
+                        {(!collapsed || isOpen) && (
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-bold text-gray-800 tracking-tight truncate max-w-[140px]">
+                                    {isLoading ? "กำลังโหลด..." : (settings?.storeName || "Nails & Brows")}
+                                </span>
+                                <span className="text-[10px] text-rose-400 font-medium -mt-0.5">
+                                    POS System
+                                </span>
+                            </div>
                         )}
                     </div>
-                    {!collapsed && (
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-800 tracking-tight truncate max-w-[140px]">
-                                {isLoading ? "กำลังโหลด..." : (settings?.storeName || "Nails & Brows")}
-                            </span>
-                            <span className="text-[10px] text-rose-400 font-medium -mt-0.5">
-                                POS System
-                            </span>
-                        </div>
-                    )}
+                    {/* Mobile Close Button */}
+                    <button
+                        className="lg:hidden flex items-center justify-center p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+                        onClick={() => setIsOpen(false)}
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
                 </div>
 
                 {/* Navigation */}
@@ -102,12 +124,13 @@ export function Sidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                onClick={() => setIsOpen(false)}
                                 className={cn(
                                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
                                     isActive
                                         ? "bg-gradient-to-r from-rose-50 to-pink-50 text-rose-600 shadow-sm shadow-rose-100"
                                         : "text-gray-500 hover:bg-rose-50/50 hover:text-rose-500",
-                                    collapsed && "justify-center px-2"
+                                    collapsed && "lg:justify-center lg:px-2"
                                 )}
                             >
                                 <item.icon
@@ -116,17 +139,18 @@ export function Sidebar() {
                                         isActive
                                             ? "text-rose-500"
                                             : "text-gray-400 group-hover:text-rose-400",
-                                        collapsed ? "h-5 w-5" : "h-[18px] w-[18px]"
+                                        collapsed ? "h-5 w-5 lg:h-[18px] lg:w-[18px]" : "h-[18px] w-[18px]",
+                                        collapsed && "lg:h-5 lg:w-5"
                                     )}
                                 />
-                                {!collapsed && <span>{item.label}</span>}
+                                {(!collapsed || isOpen) && <span>{item.label}</span>}
                             </Link>
                         );
                     })}
                 </nav>
 
                 {/* Collapse Toggle */}
-                <div className="p-3 border-t border-rose-100">
+                <div className="hidden lg:block p-3 border-t border-rose-100">
                     <button
                         onClick={() => setCollapsed(true)}
                         className="flex items-center justify-center w-full py-2 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors gap-2"
