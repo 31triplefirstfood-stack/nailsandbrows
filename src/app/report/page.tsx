@@ -410,7 +410,7 @@ export default function StaffLogsPage() {
                                                         <div key={tx.id} className="p-4 hover:bg-gray-50/50 transition-colors">
                                                             <div className="flex items-start justify-between mb-3">
                                                                 <div className="flex items-center gap-1.5 text-red-600 font-bold text-sm">
-                                                                    {format(new Date(tx.date), "dd/MM/yyyy HH:mm")}
+                                                                    {new Date(tx.date).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
                                                                 </div>
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="font-black text-gray-800">{Number(tx.totalAmount).toLocaleString()} THB</span>

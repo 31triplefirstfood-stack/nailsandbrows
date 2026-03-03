@@ -1,3 +1,4 @@
+import { getBkkTodayRange } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,26 +10,24 @@ export async function GET(request: NextRequest) {
 
         const where: Record<string, any> = {};
 
-        const anchorDate = dateParam ? new Date(dateParam) : new Date();
-        const y = anchorDate.getFullYear();
-        const m = anchorDate.getMonth();
-        const d = anchorDate.getDate();
+        const { start: todayStart, end: todayEnd, year: y, month: m, day: d } = getBkkTodayRange(dateParam);
 
         if (range === "monthly") {
-            const startOfMonth = new Date(y, m, 1);
-            const endOfMonth = new Date(y, m + 1, 1);
+            const startOfMonth = new Date(Date.UTC(y, m, 0, 17, 0, 0, 0));
+            const endOfMonth = new Date(Date.UTC(y, m + 1, 0, 17, 0, 0, 0));
             where.date = { gte: startOfMonth, lt: endOfMonth };
         } else if (range === "weekly") {
-            const day = anchorDate.getDay();
-            const diff = anchorDate.getDate() - day;
-            const startOfWeek = new Date(y, m, diff);
+            // Re-calculate start of week based on anchor date in BKK
+            const anchorDate = new Date(Date.UTC(y, m, d - 1, 17, 0, 0, 0));
+            const dayOfWeek = anchorDate.getDay();
+            const diff = anchorDate.getDate() - dayOfWeek;
+
+            const startOfWeek = new Date(Date.UTC(y, m, diff - 1, 17, 0, 0, 0));
             const endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(startOfWeek.getDate() + 7);
             where.date = { gte: startOfWeek, lt: endOfWeek };
         } else { // today or date
-            const startOfDay = new Date(y, m, d);
-            const endOfDay = new Date(y, m, d + 1);
-            where.date = { gte: startOfDay, lt: endOfDay };
+            where.date = { gte: todayStart, lt: todayEnd };
         }
 
         const transactions = await prisma.transaction.findMany({
