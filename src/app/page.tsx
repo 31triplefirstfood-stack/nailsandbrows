@@ -142,11 +142,17 @@ export default function RecordsPage() {
         if (!employeeName) { toast.error("Please select an employee"); return; }
         if (cart.length === 0) { toast.error("Please select at least one service"); return; }
 
-        let txDateIso = new Date().toISOString();
-        if (transactionDate) {
-            const d = new Date(transactionDate);
-            if (!isNaN(d.getTime())) txDateIso = d.toISOString();
+        let finalDate = new Date();
+        const selectedDateStr = transactionDate;
+        const todayStr = format(new Date(), "yyyy-MM-dd");
+
+        if (selectedDateStr !== todayStr) {
+            // If user picked a different day, use that day but keep current time
+            // So we don't default to 00:00 UTC which shows as 07:00 BKK
+            const [y, m, d] = selectedDateStr.split("-").map(Number);
+            finalDate.setFullYear(y, m - 1, d);
         }
+        const txDateIso = finalDate.toISOString();
 
         setProcessing(true);
         try {
