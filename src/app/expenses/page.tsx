@@ -52,7 +52,7 @@ export default function ExpensesPage() {
             }
             if (dashRes.ok) {
                 const dashData = await dashRes.json();
-                setMonthIncome(dashData.monthRevenue || 0);
+                setMonthIncome(dashData.monthlyRevenue || 0);
             }
         } catch (error) {
             console.error("Fetch expenses error:", error);

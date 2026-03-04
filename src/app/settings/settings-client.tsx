@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, Target, Download, Upload, Loader2, Save, CalendarIcon, Lock, Users, Scissors } from "lucide-react";
+import { Store, Target, Download, Upload, Loader2, Save, CalendarIcon, Lock, Users, Scissors, Trash2, AlertTriangle, Database } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -62,9 +63,46 @@ export default function SettingsClient() {
         to: new Date(),
     });
 
+    const [cleanupDateRange, setCleanupDateRange] = useState<{ from: Date; to: Date | undefined }>({
+        from: new Date(),
+        to: new Date(),
+    });
+
     // PIN Change State
     const [pinForm, setPinForm] = useState({ currentPin: "", newPin: "", confirmPin: "" });
     const [isSavingPin, setIsSavingPin] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const handleCleanup = async () => {
+        if (!cleanupDateRange.from) {
+            toast.error("กรุณาเลือกวันที่เริ่มต้น");
+            return;
+        }
+
+        setIsDeleting(true);
+        try {
+            const toDate = cleanupDateRange.to || cleanupDateRange.from;
+            const startDateStr = format(cleanupDateRange.from, "yyyy-MM-dd'T'00:00:00.000'Z'");
+            const endDateStr = format(toDate, "yyyy-MM-dd'T'23:59:59.999'Z'");
+
+            const res = await fetch(`/api/system/cleanup?startDate=${startDateStr}&endDate=${endDateStr}`, {
+                method: "DELETE",
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success(data.message || "ลบข้อมูลสำเร็จ");
+                setShowDeleteConfirm(false);
+            } else {
+                toast.error(data.error || "เกิดข้อผิดพลาดในการลบข้อมูล");
+            }
+        } catch {
+            toast.error("ไม่สามารถลบข้อมูลได้");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const handleChangePin = async () => {
         if (!pinForm.currentPin || !pinForm.newPin || !pinForm.confirmPin) {
@@ -177,7 +215,7 @@ export default function SettingsClient() {
         }
     };
 
-    const handleExport = (type: "transactions" | "appointments") => {
+    const handleExport = (type: "transactions" | "expenses") => {
         if (!exportDateRange.from) {
             toast.error("กรุณาเลือกวันที่เริ่มต้น");
             return;
@@ -226,6 +264,9 @@ export default function SettingsClient() {
                         </TabsTrigger>
                         <TabsTrigger value="export" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-gray-100 transition-all gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
                             <Download className="h-4 w-4" /> ส่งออกข้อมูล
+                        </TabsTrigger>
+                        <TabsTrigger value="database" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-gray-100 transition-all gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                            <Database className="h-4 w-4" /> จัดการข้อมูล
                         </TabsTrigger>
                         <TabsTrigger value="security" className="rounded-xl px-4 py-2.5 data-[state=active]:bg-white data-[state=active]:text-rose-600 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-gray-100 transition-all gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
                             <Lock className="h-4 w-4" /> ความปลอดภัย
@@ -483,17 +524,155 @@ export default function SettingsClient() {
                                             <Download className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <h4 className="text-base font-bold text-gray-800">รายการนัดหมาย</h4>
-                                            <p className="text-sm text-gray-500 font-medium mt-0.5">Appointments การจองต่างๆ</p>
+                                            <h4 className="text-base font-bold text-gray-800">รายการจ่าย</h4>
+                                            <p className="text-sm text-gray-500 font-medium mt-0.5">Expenses ข้อมูลค่าใช้จ่าย</p>
                                         </div>
                                     </div>
                                     <Button
                                         variant="outline"
                                         className="bg-white border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 rounded-xl font-medium shadow-sm active:scale-[0.98] transition-all whitespace-nowrap"
-                                        onClick={() => handleExport("appointments")}
+                                        onClick={() => handleExport("expenses")}
                                     >
                                         ส่งออก CSV
                                     </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="database" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <Card className="border border-gray-100 shadow-xl shadow-gray-200/40 rounded-3xl overflow-hidden bg-white/60 backdrop-blur-md">
+                        <CardHeader className="border-b border-gray-100/50 bg-white/80 pb-6 pt-8 px-8">
+                            <CardTitle className="text-xl font-bold text-gray-800">จัดการฐานข้อมูล (Database Management)</CardTitle>
+                            <CardDescription className="text-gray-500 font-medium mt-1">ลบข้อมูลเก่าเพื่อให้ระบบทำงานได้เร็วขึ้นและประหยัดพื้นที่</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-8 pt-8 px-8 bg-white/40">
+                            <div className="bg-white border rounded-2xl p-6 shadow-sm border-gray-100 flex flex-col sm:flex-row items-start sm:items-center gap-6 justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-12 w-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
+                                        <CalendarIcon className="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-base font-bold text-gray-800 mb-1">เลือกช่วงวันที่ที่ต้องการลบ</h4>
+                                        <p className="text-sm text-gray-500 font-medium">ข้อมูลในช่วงวันที่เลือกนี้จะถูกลบออกจากระบบอย่างถาวร</p>
+                                    </div>
+                                </div>
+
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            id="cleanup-date"
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full sm:w-[280px] justify-start text-left font-medium rounded-xl h-12 border-gray-200 hover:border-orange-400 hover:bg-orange-50/30 transition-all shadow-sm",
+                                                !cleanupDateRange.from && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-3 h-5 w-5 text-orange-500" />
+                                            {cleanupDateRange.from ? (
+                                                cleanupDateRange.to ? (
+                                                    <span className="text-gray-700">
+                                                        {format(cleanupDateRange.from, "d MMM yy", { locale: th })} -{" "}
+                                                        {format(cleanupDateRange.to, "d MMM yy", { locale: th })}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-700">{format(cleanupDateRange.from, "d MMM yy", { locale: th })}</span>
+                                                )
+                                            ) : (
+                                                <span>คลิกเพื่อเลือกวันที่</span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 rounded-2xl border-gray-100 shadow-xl" align="end">
+                                        <Calendar
+                                            initialFocus
+                                            mode="range"
+                                            defaultMonth={cleanupDateRange.from}
+                                            selected={{ from: cleanupDateRange.from, to: cleanupDateRange.to }}
+                                            onSelect={(range) => {
+                                                if (range?.from) {
+                                                    setCleanupDateRange({ from: range.from, to: range.to });
+                                                }
+                                            }}
+                                            numberOfMonths={2}
+                                            className="rounded-2xl"
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+                            <div className="pt-4 border-t border-gray-100">
+                                <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-8 shadow-sm flex flex-col items-center text-center gap-6">
+                                    <div className="h-20 w-20 rounded-3xl bg-rose-100 flex items-center justify-center text-rose-600 shadow-inner">
+                                        <AlertTriangle className="h-10 w-10" />
+                                    </div>
+                                    <div className="max-w-md">
+                                        <h4 className="text-xl font-bold text-gray-800 mb-2">ลบข้อมูลในฐานข้อมูล</h4>
+                                        <p className="text-gray-500 font-medium leading-relaxed">
+                                            การดำเนินการนี้จะลบรายการขาย (Transactions), รายจ่าย (Expenses) และการนัดหมาย (Appointments) ในช่วงเวลาที่เลือก <br />
+                                            <span className="text-rose-600 font-bold">**ข้อมูลจะถูกลบอย่างถาวรและไม่สามารถเรียกคืนได้**</span>
+                                        </p>
+                                    </div>
+
+                                    <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                variant="destructive"
+                                                className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-bold shadow-lg shadow-rose-200 active:scale-[0.98] transition-all gap-3 h-14 px-10 text-lg"
+                                            >
+                                                <Trash2 className="h-6 w-6" />
+                                                ลบข้อมูล
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="rounded-3xl border-none shadow-2xl p-0 overflow-hidden max-w-md">
+                                            <div className="bg-rose-600 p-8 text-white flex flex-col items-center text-center">
+                                                <div className="h-16 w-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm">
+                                                    <AlertTriangle className="h-10 w-10 text-white" />
+                                                </div>
+                                                <DialogTitle className="text-2xl font-bold mb-2">ยืนยันการลบข้อมูลครั้งสุดท้าย?</DialogTitle>
+                                                <DialogDescription className="text-rose-100 text-base font-medium">
+                                                    ข้อมูลชุดนี้จะถูกลบออกจากระบบทันที:
+                                                    <div className="mt-3 bg-black/20 px-6 py-3 rounded-2xl font-black text-white text-lg tracking-wide border border-white/10">
+                                                        {cleanupDateRange.from ? (
+                                                            cleanupDateRange.to ? (
+                                                                <>
+                                                                    {format(cleanupDateRange.from, "d MMM yy", { locale: th })} -{" "}
+                                                                    {format(cleanupDateRange.to, "d MMM yy", { locale: th })}
+                                                                </>
+                                                            ) : (
+                                                                <>{format(cleanupDateRange.from, "d MMM yy", { locale: th })}</>
+                                                            )
+                                                        ) : "ยังไม่ได้เลือกวันที่"}
+                                                    </div>
+                                                </DialogDescription>
+                                            </div>
+                                            <div className="p-8 bg-white">
+                                                <p className="text-gray-600 text-center mb-8 font-medium">
+                                                    กรุณาตรวจสอบวันที่ให้แน่ใจก่อนกดยืนยัน <br />
+                                                    ระบบจะทำการลบข้อมูล Transactions, Expenses และ Appointments ทั้งหมดในช่วงเวลานี้
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setShowDeleteConfirm(false)}
+                                                        className="rounded-2xl h-14 font-bold border-gray-200 hover:bg-gray-50 text-gray-600"
+                                                    >
+                                                        ยกเลิก
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        disabled={isDeleting}
+                                                        onClick={handleCleanup}
+                                                        className="rounded-2xl h-14 font-bold bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200"
+                                                    >
+                                                        {isDeleting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Trash2 className="h-5 w-5 mr-2" />}
+                                                        ยืนยันการลบ
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
                                 </div>
                             </div>
                         </CardContent>

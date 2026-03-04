@@ -35,11 +35,11 @@ export async function GET(request: Request) {
 
         // Generate CSV content
         const bom = "\uFEFF"; // BOM for Excel UTF-8 compatibility
-        let csvContent = bom + "Date,Customer Name,Payment Method,Total Amount,Items\n";
+        let csvContent = bom + "Date,Employee Name,Payment Method,Total Amount,Items\n";
 
         transactions.forEach((tx) => {
             const date = format(new Date(tx.date), "yyyy-MM-dd HH:mm:ss");
-            const customer = `"${tx.customerName.replace(/"/g, '""')}"`;
+            const employee = `"${tx.employeeName.replace(/"/g, '""')}"`;
             const method = tx.paymentMethod;
             const amount = tx.totalAmount.toString();
 
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
                 .join("; ");
             const items = `"${itemsList.replace(/"/g, '""')}"`;
 
-            csvContent += `${date},${customer},${method},${amount},${items}\n`;
+            csvContent += `${date},${employee},${method},${amount},${items}\n`;
         });
 
         return new NextResponse(csvContent, {

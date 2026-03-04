@@ -79,33 +79,38 @@ export function Sidebar() {
                     collapsed ? "lg:w-0 lg:border-r-0 lg:overflow-hidden lg:opacity-0" : "lg:w-64 lg:border-r lg:opacity-100"
                 )}
             >
-                {/* Logo */}
+                {/* Logo Section */}
                 <div className={cn(
-                    "flex items-center justify-between gap-3 px-4 h-16 border-b border-rose-100",
-                    collapsed && "lg:justify-center lg:px-2"
+                    "flex flex-col items-center justify-center gap-3 px-4 py-8 border-b border-rose-100 relative",
+                    collapsed && "lg:py-4 lg:px-2"
                 )}>
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 shadow-md shadow-rose-200 overflow-hidden relative">
-                            {!isLoading && settings?.storeLogo ? (
-                                <Image src={settings.storeLogo} alt="Store Logo" fill className="object-cover" />
-                            ) : (
-                                <Sparkles className="h-5 w-5 text-white" />
-                            )}
-                        </div>
-                        {(!collapsed || isOpen) && (
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-bold text-gray-800 tracking-tight truncate max-w-[140px]">
-                                    {isLoading ? "กำลังโหลด..." : (settings?.storeName || "Nails & Brows")}
-                                </span>
-                                <span className="text-[10px] text-rose-400 font-medium -mt-0.5">
-                                    POS System
-                                </span>
-                            </div>
+                    {/* Logo Container */}
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 shadow-lg shadow-rose-200 overflow-hidden relative">
+                        {(!isLoading && (settings?.storeLogo || "/nailslogo.jpg")) ? (
+                            <Image
+                                src={settings?.storeLogo || "/nailslogo.jpg"}
+                                alt="Store Logo"
+                                fill
+                                className="object-cover"
+                            />
+                        ) : (
+                            <Sparkles className="h-8 w-8 text-white" />
                         )}
                     </div>
+
+                    {/* Shop Name */}
+                    {(!collapsed || isOpen) && (
+                        <div className="flex flex-col items-center text-center">
+                            <span className="text-base font-extrabold text-gray-800 tracking-tight">
+                                {isLoading ? "กำลังโหลด..." : (settings?.storeName || "Nails & Brows")}
+                            </span>
+                            <div className="h-1 w-8 bg-rose-400 rounded-full mt-1.5 opacity-50" />
+                        </div>
+                    )}
+
                     {/* Mobile Close Button */}
                     <button
-                        className="lg:hidden flex items-center justify-center p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+                        className="lg:hidden absolute top-4 right-4 flex items-center justify-center p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
                         onClick={() => setIsOpen(false)}
                     >
                         <X className="h-5 w-5" />

@@ -75,12 +75,38 @@ export default function RecordsPage() {
     const [services, setServices] = useState<ServiceItem[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
-    const [cart, setCart] = useState<CartItem[]>([]);
+    const [employeeCarts, setEmployeeCarts] = useState<Record<string, CartItem[]>>({});
     const [transactionDate, setTransactionDate] = useState(format(new Date(), "yyyy-MM-dd"));
     const [employeeName, setEmployeeName] = useState("");
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
     const [filterCategory, setFilterCategory] = useState<string>("NAILS");
     const [processing, setProcessing] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    // Load from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem("employeeCarts");
+        if (saved) {
+            try {
+                setEmployeeCarts(JSON.parse(saved));
+            } catch (e) {
+                console.error("Failed to parse employeeCarts from localStorage", e);
+            }
+        }
+        const savedName = localStorage.getItem("selectedEmployeeName");
+        if (savedName) setEmployeeName(savedName);
+        setIsLoaded(true);
+    }, []);
+
+    // Save to localStorage when employeeCarts or employeeName changes, but only after initial load
+    useEffect(() => {
+        if (isLoaded) {
+            localStorage.setItem("employeeCarts", JSON.stringify(employeeCarts));
+            localStorage.setItem("selectedEmployeeName", employeeName);
+        }
+    }, [employeeCarts, employeeName, isLoaded]);
+
+    const cart = employeeName ? (employeeCarts[employeeName] || []) : [];
     const [isEditingLayout, setIsEditingLayout] = useState(false);
     const [selectedForSwap, setSelectedForSwap] = useState<string | null>(null);
 
@@ -128,14 +154,27 @@ export default function RecordsPage() {
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
     const addToCart = (svc: ServiceItem) => {
-        setCart((prev) => {
-            const existing = prev.find((c) => c.service.id === svc.id);
-            if (existing) return prev.map((c) => c.service.id === svc.id ? { ...c, quantity: c.quantity + 1 } : c);
-            return [...prev, { service: svc, quantity: 1 }];
+        if (!employeeName) {
+            toast.error("กรุณาเลือกพนักงานก่อนเลือกบริการ");
+            return;
+        }
+        setEmployeeCarts((prev) => {
+            const currentEmployeeCart = prev[employeeName] || [];
+            const existing = currentEmployeeCart.find((c) => c.service.id === svc.id);
+            const updatedCart = existing
+                ? currentEmployeeCart.map((c) => c.service.id === svc.id ? { ...c, quantity: c.quantity + 1 } : c)
+                : [...currentEmployeeCart, { service: svc, quantity: 1 }];
+            return { ...prev, [employeeName]: updatedCart };
         });
     };
 
-    const removeFromCart = (id: string) => setCart((prev) => prev.filter((c) => c.service.id !== id));
+    const removeFromCart = (id: string) => {
+        if (!employeeName) return;
+        setEmployeeCarts((prev) => ({
+            ...prev,
+            [employeeName]: (prev[employeeName] || []).filter((c) => c.service.id !== id)
+        }));
+    };
     const cartTotal = cart.reduce((sum, c) => sum + c.service.price * c.quantity, 0);
 
     const handleCheckout = async () => {
@@ -168,7 +207,8 @@ export default function RecordsPage() {
             const res = await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
             if (!res.ok) throw new Error();
             toast.success(`Payment successful ฿${cartTotal.toLocaleString()} — ${PAYMENT_LABELS[paymentMethod]}`);
-            setCart([]); setEmployeeName(""); setPaymentMethod("CASH"); setTransactionDate(format(new Date(), "yyyy-MM-dd"));
+            setEmployeeCarts(prev => ({ ...prev, [employeeName]: [] }));
+            setEmployeeName(""); setPaymentMethod("CASH"); setTransactionDate(format(new Date(), "yyyy-MM-dd"));
             fetchAll();
         } catch { toast.error("Failed to save transaction"); }
         finally { setProcessing(false); }

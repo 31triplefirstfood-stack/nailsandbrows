@@ -31,7 +31,7 @@ const menuItems = [
 
 const pageTitles: Record<string, string> = {
     "/dashboard": "แดชบอร์ด",
-
+    "/report": "รายงาน",
     "/": "บันทึกรายการ",
     "/appointments": "นัดหมาย",
     "/expenses": "รายจ่าย",
