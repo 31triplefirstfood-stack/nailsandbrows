@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nails & Brows POS",
   description: "ระบบจัดการร้านเสริมสวย Nails & Brows — POS & Management System",
+  icons: {
+    icon: "/nailslogo.jpg?v=2",
+  },
 };
 
 export default function RootLayout({
